@@ -3,6 +3,7 @@ import numba as nb
 SQRT2 = np.sqrt(2.0)
 global rx,ry,ra,rb
 rx,ry,ra,rb =None,None,None,None
+
 def initRosenbrock(x,y,a=1,b=10):
     global rx, ry, ra, rb
     rx, ry, ra, rb = x, y, a, b
@@ -31,10 +32,6 @@ def rosenbrock_grad():
     dfdy = 2*rb - 2*rb*rx**2
     return np.array([dfdx, dfdy])
 
-def rosenbrock_objective():
-    """Compute the objective value for the Rosenbrock function.
-    """
-    return rosenbrock()
   
 
 def model4a_objective(u, A, g):
@@ -207,11 +204,22 @@ def model4a_gradient(u, A, g, eps=1e-12):
 
     return grad
 
-def steepes_descent():
-    #TODO: implement steepes descent method
+def steepest_descent(alpha,fun,grad):
+    """
+    Performs Steepest Descent optimization to minimize given Function.
+    Args:
+        alpha (float): Step size for the descent.
+        fun (callable): The objective function to minimize.
+        grad (callable): Function to compute the gradient of the objective function.
+    Returns:
+        None
+    
+    """
+    #TODO: implement steepest descent method
+    mNew = fun()
+    
 
-
-
+    pass
 
 
 
