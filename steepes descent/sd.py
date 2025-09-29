@@ -1,38 +1,20 @@
 import numpy as np 
 import numba as nb
+
 SQRT2 = np.sqrt(2.0)
-global rx,ry,ra,rb
-rx,ry,ra,rb =None,None,None,None
+EPSILON = 1e-6
+a = 1.0
+b = 10.0
 
-def initRosenbrock(x,y,a=1,b=10):
-    global rx, ry, ra, rb
-    rx, ry, ra, rb = x, y, a, b
+# Rosenbrock
+def rosenbrock(x, a, b):
+    return (x[0] - a)**2 + b*(x[1]-x[0]**2)**2
 
-def rosenbrock():
-    """Compute the Rosenbrock function.
-
-    Args:
-        x (float): The x-coordinate.
-        y (float): The y-coordinate.
-        b (float): The parameter b.
-        a (float): The parameter a.
-        Returns:
-    float: The value of the Rosenbrock function at (x, y).
-    """
-    return (rx-ra)**2 + rb*(ry-rx**2)**2
-
-def rosenbrock_grad():
-    """
-    Compute the gradient of the Rosenbrock function.
-    using the global variables rx, ry, ra, rb.
-    Returns:
-        np.array: The gradient [df/dx, df/dy] at (rx, ry).
-    """
-    dfdx = 4*(rb*rx**3) - 2*rb*ry*rx + 2*rx - 2*ra
-    dfdy = 2*rb - 2*rb*rx**2
-    return np.array([dfdx, dfdy])
-
-  
+def rosenbrock2_grad(x, a, b):
+    x1, x2 = x
+    d1 = 2*(x1 - a) - 4*b*x1*(x2 - x1**2)
+    d2 = 2*b*(x2 - x1**2)
+    return np.array([d1, d2])
 
 def model4a_objective(u, A, g):
     u = np.asarray(u, float)
@@ -204,6 +186,29 @@ def model4a_gradient(u, A, g, eps=1e-12):
 
     return grad
 
+def steepest_descent_fixed(alpha, fun, grad, u, a):
+    """
+    Performs Steepest Descent optimization to minimize given Function.
+    Args:
+        alpha (float): Step size for the descent.
+        fun (callable): The objective function to minimize.
+        grad (callable): Function to compute the gradient of the objective function.
+    Returns:
+        None
+    
+    """
+    #TODO: implement steepest descent method
+    m_new = fun(u)
+    m_old = 10e100
+    while abs(m_new - m_old) > EPSILON:
+        m_old = m_new
+        g = grad(u)
+        h = -g
+        u = u + alpha * h
+        m_new = fun(u)
+    
+    return m_old, 
+
 def steepest_descent(alpha,fun,grad):
     """
     Performs Steepest Descent optimization to minimize given Function.
@@ -223,99 +228,103 @@ def steepest_descent(alpha,fun,grad):
 
 
 
+
 def __main__():
-    u= np.array([
-    0.8147,
-    0.9058,
-    0.1270,
-    0.9134,
-    0.6324,
-    0.0975,
-    0.2785,
-    0.5469,
-    0.9575,
-    0.9649,
-    0.1576,
-    0.9706,
-    0.9572,
-    0.4854,
-    0.8003,
-    0.1419,
-    0.4218,
-    0.9157,
-    0.7922,
-    0.9595,
-    0.6557,
-    0.0357,
-    0.8491,
-    0.9340,
-    0.6787,
-    0.7577,
-    0.7431,
-    0.3922,
-    0.6555,
-    0.1712,
-    0.7060,
-    0.0318,
-    0.2769,
-    0.0462,
-    0.0971,
-    0.8235,
-    0.6948,
-    0.3171,
-    0.9502,
-    0.0344,
-    0.4387,
-    0.3816,
-    0.7655,
-    0.7952,
-    0.1869,
-    0.4898,
-    0.4456,
-    0.6463,
-    0.7094,
-    0.7547,
-    0.2760,
-    0.6797,
-    0.6551,
-    0.1626,
-    0.1190,
-    0.4984,
-    0.9597,
-    0.3404,
-    0.5853,
-    0.2238,
-    0.7513,
-    0.2551,
-    0.5060,
-    0.6991,
-    0.8909,
-    0.9593,
-    0.5472,
-    0.1386,
-    0.1493,
-    0.2575,
-    0.8407,
-    0.2543,
-    0.8143,
-    0.2435,
-    0.9293,
-    0.3500,
-    0.1966,
-    0.2511,
-    0.6160,
-    0.4733])
-    g = np.zeros(80)
-    g[61]=1
-    g[78]=1
-    a=np.ones(148)
     
-    initRosenbrock(-0.75,0.7,1,10)
-    print("Rosenbrock value at (-0.75,-0.7):", rosenbrock())
-    print("Rosenbrock gradient at (-0.75,-0.7):", rosenbrock_grad())
+    x = np.array([-0.75, 0.7])
+    u = np.array([
+        0.8147,
+        0.9058,
+        0.1270,
+        0.9134,
+        0.6324,
+        0.0975,
+        0.2785,
+        0.5469,
+        0.9575,
+        0.9649,
+        0.1576,
+        0.9706,
+        0.9572,
+        0.4854,
+        0.8003,
+        0.1419,
+        0.4218,
+        0.9157,
+        0.7922,
+        0.9595,
+        0.6557,
+        0.0357,
+        0.8491,
+        0.9340,
+        0.6787,
+        0.7577,
+        0.7431,
+        0.3922,
+        0.6555,
+        0.1712,
+        0.7060,
+        0.0318,
+        0.2769,
+        0.0462,
+        0.0971,
+        0.8235,
+        0.6948,
+        0.3171,
+        0.9502,
+        0.0344,
+        0.4387,
+        0.3816,
+        0.7655,
+        0.7952,
+        0.1869,
+        0.4898,
+        0.4456,
+        0.6463,
+        0.7094,
+        0.7547,
+        0.2760,
+        0.6797,
+        0.6551,
+        0.1626,
+        0.1190,
+        0.4984,
+        0.9597,
+        0.3404,
+        0.5853,
+        0.2238,
+        0.7513,
+        0.2551,
+        0.5060,
+        0.6991,
+        0.8909,
+        0.9593,
+        0.5472,
+        0.1386, 
+        0.1493,
+        0.2575,
+        0.8407,
+        0.2543,
+        0.8143,
+        0.2435,
+        0.9293,
+        0.3500,
+        0.1966,
+        0.2511,
+        0.6160,
+        0.4733])
+
+    g = np.array([0.0]*80)
+    g[61] = 1.0
+    g[78] = 1.0
+
+    A = np.ones(148)
+    print(rosenbrock(x,a, b))
+    print(rosenbrock2_grad(x, a, b))
+    print(model4a_objective(u, A, g))
+    print(model4a_gradient(u, A, g))
     
-    print("Model4a objective:", model4a_objective(u,a,g))
-    print("Model4a gradient:", model4a_gradient(u,a,g))
+
 
 if __name__ == "__main__":
     __main__()
