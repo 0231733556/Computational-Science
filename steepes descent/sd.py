@@ -185,7 +185,7 @@ def model4a_gradient(u, A, g, eps=1e-12):
 
     return grad
 
-def steepest_descent_fixed(alpha, fun, grad, u):
+def steepest_descent_fixed(alpha=0.04, fun, grad, u):
     """
     Performs Steepest Descent optimization to minimize given Function.
     Args:
@@ -193,7 +193,7 @@ def steepest_descent_fixed(alpha, fun, grad, u):
         fun (callable): The objective function to minimize.
         grad (callable): Function to compute the gradient of the objective function.
     Returns:
-        None
+        m_old, u - alpha * h (tuple): The minimum value of the objective function and the corresponding point.
     
     """
     #TODO: implement steepest descent method
@@ -208,7 +208,7 @@ def steepest_descent_fixed(alpha, fun, grad, u):
     
     return m_old, u - alpha * h
 
-def steepest_decent_backtracking(alpha,fun,grad,u,c,r):
+def steepest_decent_backtracking(alpha=0.04,fun,grad,u,c=0.5,r=0.8):
     """
     Performs Steepest Descent optimization to minimize given Function,
     using backtracking line search to determine step size.
@@ -220,9 +220,25 @@ def steepest_decent_backtracking(alpha,fun,grad,u,c,r):
         c (float): Parameter for sufficient decrease condition (0 < c < 1).
         r (float): Step size reduction factor (0 < r < 1).
     Returns:
-        None
+        m_old, u-alpha*h (tuple): The minimum value of the objective function and the corresponding point.
     """
-
+    m_new = fun(u)
+    m_old = 10e100
+    while abs(m_new - m_old) > EPSILON:
+        m_old = m_new
+        g=grad(u)
+        h=-g
+        # Backtracking line search
+        alpha=1/r*alpha
+        m_x =10e100
+        u_x = u
+        while abs(m_x -m_new +c*alpha*np.dot(g,h))>EPSILON:
+            alpha = r*alpha
+            u_x = u + alpha*h
+            m_x = fun(u_x)
+        m_new = m_x, u = u_x
+    return m_old, u-alpha*h
+           
 
 
 def __main__():
