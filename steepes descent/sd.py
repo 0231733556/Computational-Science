@@ -1,5 +1,4 @@
 import numpy as np 
-import numba as nb
 
 SQRT2 = np.sqrt(2.0)
 EPSILON = 1e-6
@@ -209,23 +208,20 @@ def steepest_descent_fixed(alpha, fun, grad, u):
     
     return m_old, u - alpha * h
 
-def steepest_descent(alpha, fun, grad, u):
+def steepest_decent_backtracking(alpha,fun,grad,u,c,r):
     """
-    Performs Steepest Descent optimization to minimize given Function.
+    Performs Steepest Descent optimization to minimize given Function,
+    using backtracking line search to determine step size.
+    
     Args:
-        alpha (float): Step size for the descent.
+        alpha (float): Initial step size for the descent.
         fun (callable): The objective function to minimize.
         grad (callable): Function to compute the gradient of the objective function.
+        c (float): Parameter for sufficient decrease condition (0 < c < 1).
+        r (float): Step size reduction factor (0 < r < 1).
     Returns:
         None
-    
     """
-    #TODO: implement steepest descent method
-    mNew = fun()
-    
-
-    pass
-
 
 
 
