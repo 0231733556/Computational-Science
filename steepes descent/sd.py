@@ -186,7 +186,7 @@ def model4a_gradient(u, A, g, eps=1e-12):
 
     return grad
 
-def steepest_descent_fixed(alpha, fun, grad, u, a):
+def steepest_descent_fixed(alpha, fun, grad, u):
     """
     Performs Steepest Descent optimization to minimize given Function.
     Args:
@@ -207,9 +207,9 @@ def steepest_descent_fixed(alpha, fun, grad, u, a):
         u = u + alpha * h
         m_new = fun(u)
     
-    return m_old, 
+    return m_old, u - alpha * h
 
-def steepest_descent(alpha,fun,grad):
+def steepest_descent(alpha, fun, grad, u):
     """
     Performs Steepest Descent optimization to minimize given Function.
     Args:
