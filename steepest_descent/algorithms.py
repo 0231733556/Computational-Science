@@ -58,6 +58,35 @@ def steepest_descent_backtracking(fun, grad, u, alpha=0.04, c=0.5, r=0.8):
     return m_old, u-alpha*h
            
 
+def steepest_descent_conjugate(fun, grad, u, alpha_init=0.04, c=0.5, r=0.8, n=100, beta=0.0):   
+    """
+    Minimizes a given function using the conjugate gradient method with backtracking line search.
+    """
+    m_new = fun(u)
+    alpha = alpha_init
+    m_old = 10e100
+    g_new = 0
+    h_new = 0
+    count = 0
+    while m_new < m_old:
+        m_old, g_old, h_old = m_new, g_new, h_new
+        g_new = grad(u)
+        if count % n == 0:
+            h_new = -g_new
+        else:
+            h_new = -g_new + max(beta, 0) * h_old
+        # Backtracking line search
+        alpha = 1 / r * alpha_init
+        m_x = 10e100
+        u_x = u
+        while m_x > m_new + c * alpha * np.dot(h_new, g_new):
+            alpha = r * alpha
+            u_x = u + alpha * h_new
+            m_x = fun(u_x)
+        m_new = m_x
+        u = u_x
+        count += 1
+    return m_old, u - alpha * h_new
 
 def __main__():
     a = 1.0
