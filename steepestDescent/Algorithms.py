@@ -1,6 +1,5 @@
-import numpy as np 
+import numpy as np
 import steepestDescent.functions as fn
-SQRT2 = np.sqrt(2.0)
 EPSILON = 1e-6
 
 

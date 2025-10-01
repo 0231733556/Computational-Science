@@ -1,3 +1,5 @@
+import numpy as np 
+SQRT2 = np.sqrt(2.0)
 # Rosenbrock
 def rosenbrock(x, a, b):
     return (x[0] - a)**2 + b*(x[1]-x[0]**2)**2
