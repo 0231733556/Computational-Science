@@ -86,13 +86,16 @@ def steepest_descent_conjugate(fun, grad, u, alpha_init=0.04, c=0.5, r=0.8, n=10
         m_new = m_x
         u = u_x
         count += 1
-    return m_old, u - alpha * h_new
+    return m_old, u - alpha * h_new, count
 
 def __main__():
+    # parameters for rosenbrock
     a = 1.0
     b = 10.0
-    
+
+    # input for rosenbrock
     x = np.array([-0.75, 0.7])
+    # input for model4a
     u = np.array([
         0.8147,
         0.9058,
@@ -175,23 +178,33 @@ def __main__():
         0.6160,
         0.4733])
 
+    # input for model4a
     g = np.array([0.0]*80)
     g[61] = 1.0
     g[78] = 1.0
-
+    # input for model4a
     A = np.ones(148)
+    
+    # testing objective and gradients
     print(fn.rosenbrock(x,a, b))
     print(fn.rosenbrock2_grad(x, a, b))
     print(fn.model4a_objective(u, A, g))
     print(fn.model4a_gradient(u, A, g))
 
+    # Steepest Descent with backtracking
     f = lambda x: fn.rosenbrock(x, a, b)
-    g = lambda x: fn.rosenbrock2_grad(x, a, b)
-    print(steepest_descent_backtracking(f, g, x, alpha=1))
-
-
-    print(steepest_descent_conjugate(f, g, x, alpha_init=1, beta=fn.beta_1))
+    grad = lambda x: fn.rosenbrock2_grad(x, a, b)
+    print(steepest_descent_backtracking(f, grad, x, alpha=1))
     
+    # Conjugate Gradient of rosenbrock
+    print(steepest_descent_conjugate(f, grad, x, alpha_init=1, n=20, beta=fn.beta_1))
+
+    # Conjugate Gradient of model4a
+    u = np.zeros(80)
+    f = lambda u: fn.model4a_objective(u, A, g)
+    grad = lambda u: fn.model4a_gradient(u, A, g)
+    print(steepest_descent_conjugate(f, grad, u, alpha_init=1, n=20, beta=fn.beta_1))
+
 
 
 if __name__ == "__main__":
