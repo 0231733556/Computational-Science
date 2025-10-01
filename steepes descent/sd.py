@@ -199,7 +199,7 @@ def steepest_descent(fun, grad, u, alpha=0.04):
     #TODO: implement steepest descent method
     m_new = fun(u)
     m_old = 10e100
-    while abs(m_new - m_old) > EPSILON:
+    while m_new < m_old:
         m_old = m_new
         g = grad(u)
         h = -g
@@ -224,7 +224,7 @@ def steepest_descent_backtracking(fun, grad, u, alpha=0.04, c=0.5, r=0.8):
     """
     m_new = fun(u)
     m_old = 10e100
-    while abs(m_new - m_old) > EPSILON:
+    while m_new < m_old:
         m_old = m_new
         g=grad(u)
         h=-g
@@ -232,7 +232,7 @@ def steepest_descent_backtracking(fun, grad, u, alpha=0.04, c=0.5, r=0.8):
         alpha=1/r*alpha
         m_x =10e100
         u_x = u
-        while abs(m_x -m_new +c*alpha*np.dot(g,h))>EPSILON:
+        while m_x > m_new +c*alpha*np.dot(h,g):
             alpha = r*alpha
             u_x = u + alpha*h
             m_x = fun(u_x)
