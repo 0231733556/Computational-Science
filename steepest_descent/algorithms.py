@@ -2,9 +2,6 @@ import numpy as np
 import functions as fn
 EPSILON = 1e-6
 
-
-
-
 def steepest_descent(fun, grad, u, alpha=0.04):
     """
     Performs Steepest Descent optimization to minimize given Function.

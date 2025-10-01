@@ -179,3 +179,73 @@ def model4a_gradient(u, A, g, eps=1e-12):
                  c, w)
 
     return grad
+
+def beta_1(f_new,f_old):
+    """
+    Compute the first beta coefficient,
+    by dividing the squared norm of the new gradient,
+    by the squared norm of the old gradient.
+    
+    (f_new)**2 / (f_old)**2
+    
+    Args:
+        f_new (np.ndarray): The new gradient vector.
+        f_old (np.ndarray): The old gradient vector.
+    Returns:
+        float: The computed beta_1 value.
+    """
+    return np.dot(f_new,f_new)/np.dot(f_old,f_old)
+
+def beta_2(f_new,f_old):
+    """
+    Compute the second beta coefficient,
+    by dividing the dot product of the new gradient
+    and the difference between the new and old gradients,
+    by the squared norm of the old gradient.
+    
+    (f_new * (f_new - f_old)) / (f_old)**2
+    
+    Args:
+        f_new (np.ndarray): The new gradient vector.
+        f_old (np.ndarray): The old gradient vector.
+    Returns:
+        float: The computed beta_2 value.
+    """
+    return np.dot(f_new,f_new-f_old)/np.dot(f_old,f_old)
+
+def beta_3(f_new,f_old,h_old):
+    """
+    Compute the third beta coefficient,
+    by dividing the dot product of the new gradient
+    and the difference between the new and old gradients,
+    by the dot product of the old step direction
+    and the difference between the new and old gradients.
+
+    f_new * (f_new - f_old) / (h_old * (f_new - f_old))
+
+    Args:
+        f_new (np.ndarray): The new gradient vector.
+        f_old (np.ndarray): The old gradient vector.
+        h_old (np.ndarray): The old step direction.
+    Returns:
+        float: The computed beta_3 value.
+    """
+    return np.dot(f_new,f_new-f_old)/np.dot(h_old, (f_new-f_old))
+
+def beta_4(f_new,f_old,h_old):
+    """
+    Compute the fourth beta coefficient,
+    by dividing the squared norm of the new gradient vector,
+    by the dot product of the old step direction
+    and the difference between the new and old gradients.
+
+    f_new**2 / (h_old * (f_new - f_old))
+
+    Args:
+        f_new (np.ndarray): The new gradient vector.
+        f_old (np.ndarray): The old gradient vector.
+        h_old (np.ndarray): The old step direction.
+    Returns:
+        float: The computed beta_4 value.
+    """
+    return np.dot(f_new,f_new)/np.dot(h_old, (f_new-f_old))
