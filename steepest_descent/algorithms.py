@@ -1,5 +1,5 @@
 import numpy as np
-import steepestDescent.functions as fn
+import steepest_descent.functions as fn
 EPSILON = 1e-6
 
 
