@@ -58,7 +58,7 @@ def steepest_descent_backtracking(fun, grad, u, alpha=0.04, c=0.5, r=0.8):
     return m_old, u-alpha*h
            
 
-def steepest_descent_conjugate(fun, grad, u, alpha_init=0.04, c=0.5, r=0.8, n=100, beta=0.0):   
+def steepest_descent_conjugate(fun, grad, u, alpha_init=0.04, c=0.5, r=0.8, n=100, beta=lambda f, g, h: 0):   
     """
     Minimizes a given function using the conjugate gradient method with backtracking line search.
     """
@@ -74,7 +74,7 @@ def steepest_descent_conjugate(fun, grad, u, alpha_init=0.04, c=0.5, r=0.8, n=10
         if count % n == 0:
             h_new = -g_new
         else:
-            h_new = -g_new + max(beta, 0) * h_old
+            h_new = -g_new + max(beta(g_old, g_new, h_old), 0) * h_old
         # Backtracking line search
         alpha = 1 / r * alpha_init
         m_x = 10e100
@@ -188,6 +188,9 @@ def __main__():
     f = lambda x: fn.rosenbrock(x, a, b)
     g = lambda x: fn.rosenbrock2_grad(x, a, b)
     print(steepest_descent_backtracking(f, g, x, alpha=1))
+
+
+    print(steepest_descent_conjugate(f, g, x, alpha_init=1, beta=fn.beta_1))
     
 
 

@@ -180,7 +180,7 @@ def model4a_gradient(u, A, g, eps=1e-12):
 
     return grad
 
-def beta_1(f_new,f_old):
+def beta_1(f_new,f_old,h_old):
     """
     Compute the first beta coefficient,
     by dividing the squared norm of the new gradient,
@@ -196,7 +196,7 @@ def beta_1(f_new,f_old):
     """
     return np.dot(f_new,f_new)/np.dot(f_old,f_old)
 
-def beta_2(f_new,f_old):
+def beta_2(f_new,f_old,h_old):
     """
     Compute the second beta coefficient,
     by dividing the dot product of the new gradient
