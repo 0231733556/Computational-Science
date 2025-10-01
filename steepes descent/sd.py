@@ -185,7 +185,7 @@ def model4a_gradient(u, A, g, eps=1e-12):
 
     return grad
 
-def steepest_descent_fixed(alpha=0.04, fun, grad, u):
+def steepest_descent_fixed(fun, grad, u, alpha=0.04):
     """
     Performs Steepest Descent optimization to minimize given Function.
     Args:
@@ -208,7 +208,7 @@ def steepest_descent_fixed(alpha=0.04, fun, grad, u):
     
     return m_old, u - alpha * h
 
-def steepest_decent_backtracking(alpha=0.04,fun,grad,u,c=0.5,r=0.8):
+def steepest_decent_backtracking(alpha,fun,grad,u,c=0.5,r=0.8):
     """
     Performs Steepest Descent optimization to minimize given Function,
     using backtracking line search to determine step size.
