@@ -185,7 +185,7 @@ def model4a_gradient(u, A, g, eps=1e-12):
 
     return grad
 
-def steepest_descent_fixed(fun, grad, u, alpha=0.04):
+def steepest_descent(fun, grad, u, alpha=0.04):
     """
     Performs Steepest Descent optimization to minimize given Function.
     Args:
@@ -208,7 +208,7 @@ def steepest_descent_fixed(fun, grad, u, alpha=0.04):
     
     return m_old, u - alpha * h
 
-def steepest_decent_backtracking(alpha,fun,grad,u,c=0.5,r=0.8):
+def steepest_descent_backtracking(fun, grad, u, alpha=0.04, c=0.5, r=0.8):
     """
     Performs Steepest Descent optimization to minimize given Function,
     using backtracking line search to determine step size.
@@ -335,6 +335,10 @@ def __main__():
     print(rosenbrock2_grad(x, a, b))
     print(model4a_objective(u, A, g))
     print(model4a_gradient(u, A, g))
+    
+    f = lambda x: rosenbrock(x, a, b)
+    g = lambda x: rosenbrock2_grad(x, a, b)
+    print(steepest_descent_backtracking(f, g, x, alpha=0.001))
     
 
 
