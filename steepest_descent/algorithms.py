@@ -179,7 +179,7 @@ def __main__():
         0.4733])
 
     # input for model4a
-    g = np.array([0.0]*80)
+    g = np.zeros(80)
     g[61] = 1.0
     g[78] = 1.0
     # input for model4a
