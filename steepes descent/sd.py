@@ -236,7 +236,8 @@ def steepest_descent_backtracking(fun, grad, u, alpha=0.04, c=0.5, r=0.8):
             alpha = r*alpha
             u_x = u + alpha*h
             m_x = fun(u_x)
-        m_new = m_x, u = u_x
+        m_new = m_x
+        u = u_x
     return m_old, u-alpha*h
            
 
@@ -338,7 +339,7 @@ def __main__():
     
     f = lambda x: rosenbrock(x, a, b)
     g = lambda x: rosenbrock2_grad(x, a, b)
-    print(steepest_descent_backtracking(f, g, x, alpha=0.001))
+    print(steepest_descent_backtracking(f, g, x, alpha=1))
     
 
 
