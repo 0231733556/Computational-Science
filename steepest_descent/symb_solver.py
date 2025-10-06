@@ -16,7 +16,7 @@ def hess_solver(expr, vars):
 # variables
 x1, x2, a, b = sp.symbols('x1 x2 a b')
 expr = (x1 - a)**2 + b*(x2 - x1**2)**2
-expr = expr.subs({a:1, b:10}) 
+#expr = expr.subs({a:1, b:10}) 
 
 grad_solver(expr, (x1, x2))
 print("\n") 

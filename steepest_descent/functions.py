@@ -13,12 +13,19 @@ def rosenbrock(x, a, b):
     log.debug(f"rosenbrock value: {temp}")
     return temp
 
-def rosenbrock2_grad(x, a, b):
+def rosenbrock_grad(x, a, b):
     x1, x2 = x
     d1 = 2*(x1 - a) - 4*b*x1*(x2 - x1**2)
     d2 = 2*b*(x2 - x1**2)
     return np.array([d1, d2])
 
+def rosenbrock_hess(x, a, b):
+    x1, x2 = x
+    h11 = 2 - 4*b*x2 + 12*b*x1**2
+    h12 = -4*b*x1
+    h21 = h12
+    h22 = 2*b
+    return np.array([[h11, h12], [h21, h22]])
 
 def model4a_objective(u, A, g):
     u = np.asarray(u, float)

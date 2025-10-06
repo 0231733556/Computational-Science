@@ -212,13 +212,13 @@ def __main__():
     
     # testing objective and gradients
     fn.rosenbrock(x,a, b)
-    fn.rosenbrock2_grad(x, a, b)
+    fn.rosenbrock_grad(x, a, b)
     fn.model4a_objective(u, A, g)
     fn.model4a_gradient(u, A, g)
 
     # Steepest Descent with backtracking
     f = lambda x: fn.rosenbrock(x, a, b)
-    grad = lambda x: fn.rosenbrock2_grad(x, a, b)
+    grad = lambda x: fn.rosenbrock_grad(x, a, b)
     steepest_descent_backtracking(f, grad, x, alpha=1)
     
     # Conjugate Gradient of rosenbrock
