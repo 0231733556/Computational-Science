@@ -197,6 +197,92 @@ def model4a_gradient(u, A, g, eps=1e-12):
 
     return grad
 
+def model4a_hessian(u, A, g, eps=1e-12):
+    u = np.asarray(u, float)
+    A = np.asarray(A, float)
+    H = np.zeros((u.size, u.size), dtype=float)
+
+    def _term_values(u, a_idx, a_coeff, a_const, b_idx, b_coeff, b_const):
+        # a(u) = a_const + sum_j a_coeff[j] * u[a_idx[j]]
+        a = a_const + np.dot(a_coeff, u[a_idx]) if len(a_idx) else a_const
+        b = b_const + np.dot(b_coeff, u[b_idx]) if len(b_idx) else b_const
+        r = np.hypot(a, b)
+        return a, b, r
+
+
+    def _add_hess(u, H, w, c, a_idx, a_coeff, a_const, b_idx, b_coeff, b_const, eps=1e-12):
+        # Exact Hessian for w*(||[a,b]|| - c)^2 with affine a(u), b(u)
+        a, b, r = _term_values(u, a_idx, a_coeff, a_const, b_idx, b_coeff, b_const)
+        if r < eps:
+            return
+        # Build small vectors A and B over the involved indices S = a_idx ∪ b_idx
+        S = list(dict.fromkeys(list(a_idx) + list(b_idx)))  # unique, keep order
+        m = len(S)
+        A = np.zeros(m); B = np.zeros(m)
+        for j, idx in enumerate(a_idx):
+            A[S.index(idx)] += a_coeff[j]
+        for j, idx in enumerate(b_idx):
+            B[S.index(idx)] += b_coeff[j]
+
+        va = a * A
+        vb = b * B
+        g = (va + vb) / r                              # ∇r restricted to S
+        # ∇^2 r on S: (AA^T + BB^T)/r - (va+vb)(va+vb)^T / r^3
+        H_r = (np.outer(A, A) + np.outer(B, B)) / r - np.outer(va + vb, va + vb) / (r**3)
+        K_S = 2.0 * w * (np.outer(g, g) + (r - c) * H_r)
+
+        # scatter-add into full H
+        for p, ip in enumerate(S):
+            for q, iq in enumerate(S):
+                H[ip, iq] += K_S[p, q]
+
+    # block 1
+    for i in range(1, 11):
+        _add_hess(u, H, A[i-1], 1.0,
+                  [2*i-2], [1.0], 0.0,
+                  [2*i-1], [1.0], 1.0)
+
+    # block 2
+    for i in range(1, 10):
+        _add_hess(u, H, A[10+i-1], SQRT2,
+                  [2*i],   [1.0], 1.0,
+                  [2*i+1], [1.0], 1.0)
+
+    # block 3
+    for i in range(1, 10):
+        _add_hess(u, H, A[19+i-1], SQRT2,
+                  [2*i-2], [-1.0], 1.0,
+                  [2*i-1], [ 1.0], 1.0)
+
+    # block 4
+    for i in range(1, 31):
+        _add_hess(u, H, A[28+i-1], 1.0,
+                  [2*i+18, 2*i-1], [1.0, -1.0], 1.0,
+                  [2*i+17, 2*i-2], [1.0, -1.0], 0.0)
+
+    # block 5
+    for i in range(1, 37):
+        t = 2 * ((i-1)//9)
+        _add_hess(u, H, A[58+i-1], 1.0,
+                  [2*i-1+t, 2*i-3+t], [1.0, -1.0], 1.0,
+                  [2*i+t,   2*i-2+t], [1.0, -1.0], 0.0)
+
+    # block 6
+    for i in range(1, 28):
+        t = 2 * ((i-1)//9)
+        _add_hess(u, H, A[94+i-1], SQRT2,
+                  [2*i+19+t, 2*i-3+t], [1.0, -1.0], 1.0,
+                  [2*i+20+t, 2*i-2+t], [1.0, -1.0], 1.0)
+
+    # block 7
+    for i in range(1, 28):
+        t = 2 * ((i-1)//9)
+        _add_hess(u, H, A[121+i-1], SQRT2,
+                  [2*i-1+t, 2*i+17+t], [1.0, -1.0], 1.0,
+                  [2*i+t,   2*i+18+t], [-1.0, 1.0], 1.0)
+
+    return H   
+
 def beta_1(f_new,f_old,h_old):
     """
     Compute the first beta coefficient,
