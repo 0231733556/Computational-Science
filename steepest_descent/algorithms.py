@@ -96,7 +96,7 @@ def steepest_descent_conjugate(fun, grad, u, alpha_init=0.04, c=0.5, r=0.8, n=10
     return m_old, u - alpha * h_new, count
 
 def __main__():
-    set_logging_level(log.DEBUG)
+    set_logging_level(log.INFO)
     # parameters for rosenbrock
     a = 1.0
     b = 10.0
