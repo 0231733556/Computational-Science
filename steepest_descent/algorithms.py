@@ -47,6 +47,7 @@ def steepest_descent_backtracking(fun, grad, u, alpha=0.04, c=0.5, r=0.8):
     """
     m_new = fun(u)
     m_old = 10e100
+    count = 0
     while m_new < m_old:
         m_old = m_new
         g=grad(u)
@@ -61,7 +62,8 @@ def steepest_descent_backtracking(fun, grad, u, alpha=0.04, c=0.5, r=0.8):
             m_x = fun(u_x)
         m_new = m_x
         u = u_x
-        
+        count += 1
+    log.debug(f"{count} iterations; fun(u): {m_old}; u: {u-alpha*h}")
     return m_old, u-alpha*h
            
 
@@ -93,8 +95,9 @@ def steepest_descent_conjugate(fun, grad, u, alpha_init=0.04, c=0.5, r=0.8, n=10
         m_new = m_x
         u = u_x
         count += 1
-    log.debug(f"m_old: {m_old}, m_new: {m_new}, ||g_new||: {np.linalg.norm(g_new)}, ||h_new||: {np.linalg.norm(h_new)}, alpha: {alpha}, count: {count}")
+    #log.debug(f"m_old: {m_old}, m_new: {m_new}, ||g_new||: {np.linalg.norm(g_new)}, ||h_new||: {np.linalg.norm(h_new)}, alpha: {alpha}, count: {count}")
     log.info(f"Conjugate Gradient converged in {count} iterations.")
+    log.debug(f"{count} iterations; fun(u): {m_old}; u: {u - alpha * h_new}")
     return m_old, u - alpha * h_new, count
 
 def newtons_method(fun,grad,hess,u,tol):
@@ -111,6 +114,7 @@ def newtons_method(fun,grad,hess,u,tol):
         u*,m(u*) (tuple): The minimum value of the objective function and the corresponding point.
         """
     g = grad(u)
+    count = 0
     while np.linalg.norm(g) > tol:
         K=hess(u)
         try:
@@ -120,11 +124,15 @@ def newtons_method(fun,grad,hess,u,tol):
             return None
         u=u+h
         g = grad(u)
+        count += 1
+        if count % 10 == 0:
+            log.debug(f"Iteration {count} ; fun(u) : {fun(u)}; u: {u}")
+    log.debug(f" {count} iterations; fun(u) : {fun(u)}; u: {u}")
     return u, fun(u)
 
 
 def __main__():
-    set_logging_level(log.INFO)
+    set_logging_level(log.DEBUG)
     # parameters for rosenbrock
     a = 1.0
     b = 10.0
@@ -230,6 +238,8 @@ def __main__():
     # Steepest Descent with backtracking
     f = lambda x: fn.rosenbrock(x, a, b)
     grad = lambda x: fn.rosenbrock_grad(x, a, b)
+    hess = lambda x: fn.rosenbrock_hess(x, a, b)
+    newtons_method(f, grad, hess, x, tol=1e-6)
     steepest_descent_backtracking(f, grad, x, alpha=1)
     
     # Conjugate Gradient of rosenbrock
@@ -239,8 +249,11 @@ def __main__():
     u = np.zeros(80)
     f = lambda u: fn.model4a_objective(u, A, g)
     grad = lambda u: fn.model4a_gradient(u, A, g)
-    steepest_descent_conjugate(f, grad, u, alpha_init=1, n=20, beta=fn.beta_1)
+    hess = lambda u: fn.model4a_hessian(u, A, g)
+    #print(hess(u))
+    #steepest_descent_conjugate(f, grad, u, alpha_init=1, n=20, beta=fn.beta_1)
 
+    #newtons_method(f, grad, hess, u, tol=1e-6)
 
 
 if __name__ == "__main__":

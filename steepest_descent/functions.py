@@ -9,8 +9,6 @@ SQRT2 = np.sqrt(2.0)
 def rosenbrock(x, a, b):
     temp = (x[0] - a)**2 + b*(x[1]-x[0]**2)**2
       
-    log.debug(f"Evaluating rosenbrock at x={x}")
-    log.debug(f"rosenbrock value: {temp}")
     return temp
 
 def rosenbrock_grad(x, a, b):
@@ -210,13 +208,17 @@ def model4a_hessian(u, A, g, eps=1e-12):
         return a, b, r
 
 
-    def _add_hess(u, H, w, c, a_idx, a_coeff, a_const, b_idx, b_coeff, b_const, eps=1e-12):
-        # Exact Hessian for w*(||[a,b]|| - c)^2 with affine a(u), b(u)
+    def _add_hess(u, H, w, c, a_idx, a_coeff, a_const, b_idx, b_coeff, b_const,
+              r_min=1e-8):
         a, b, r = _term_values(u, a_idx, a_coeff, a_const, b_idx, b_coeff, b_const)
-        if r < eps:
-            return
-        # Build small vectors A and B over the involved indices S = a_idx ∪ b_idx
-        S = list(dict.fromkeys(list(a_idx) + list(b_idx)))  # unique, keep order
+
+        # Clamp r away from zero
+        r = max(r, r_min)
+        inv_r  = 1.0 / r
+        inv_r3 = inv_r * inv_r * inv_r   # avoid r**3
+
+        # Build restricted derivatives on the involved index set S
+        S = list(dict.fromkeys(list(a_idx) + list(b_idx)))
         m = len(S)
         A = np.zeros(m); B = np.zeros(m)
         for j, idx in enumerate(a_idx):
@@ -226,15 +228,17 @@ def model4a_hessian(u, A, g, eps=1e-12):
 
         va = a * A
         vb = b * B
-        g = (va + vb) / r                              # ∇r restricted to S
-        # ∇^2 r on S: (AA^T + BB^T)/r - (va+vb)(va+vb)^T / r^3
-        H_r = (np.outer(A, A) + np.outer(B, B)) / r - np.outer(va + vb, va + vb) / (r**3)
+        g  = (va + vb) * inv_r                     # ∇r on S
+        H_r = (np.outer(A, A) + np.outer(B, B)) * inv_r \
+            - np.outer(va + vb, va + vb) * inv_r3
+
         K_S = 2.0 * w * (np.outer(g, g) + (r - c) * H_r)
 
-        # scatter-add into full H
+        # scatter-add
         for p, ip in enumerate(S):
             for q, iq in enumerate(S):
                 H[ip, iq] += K_S[p, q]
+
 
     # block 1
     for i in range(1, 11):
