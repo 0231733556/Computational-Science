@@ -97,7 +97,7 @@ def steepest_descent_conjugate(fun, grad, u, alpha_init=0.04, c=0.5, r=0.8, n=10
     log.info(f"Conjugate Gradient converged in {count} iterations.")
     return m_old, u - alpha * h_new, count
 
-def newtons_method(fun,grad,u,tol):
+def newtons_method(fun,grad,hess,u,tol):
     """
     Minimizes a given function using Newton's method.
     
@@ -110,8 +110,19 @@ def newtons_method(fun,grad,u,tol):
     Returns:
         u*,m(u*) (tuple): The minimum value of the objective function and the corresponding point.
         """
+    g = grad(u)
+    while np.linalg.norm(g) > tol:
+        K=hess(u)
+        try:
+            h = -np.linalg.solve(K, g)
+        except np.linalg.LinAlgError:
+            log.warning("Hessian is singular or not invertible. Aborting...")
+            return None
+        u=u+h
+        g = grad(u)
+    return u, fun(u)
 
-    
+
 def __main__():
     set_logging_level(log.INFO)
     # parameters for rosenbrock
