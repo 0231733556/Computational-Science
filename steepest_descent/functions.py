@@ -7,7 +7,7 @@ def set_logging_level(level):
 SQRT2 = np.sqrt(2.0)
 # Rosenbrock
 def rosenbrock(x, a, b):
-    temp=(x[0] - a)**2 + b*(x[1]-x[0]**2)**2
+    temp = (x[0] - a)**2 + b*(x[1]-x[0]**2)**2
       
     log.debug(f"Evaluating rosenbrock at x={x}")
     log.debug(f"rosenbrock value: {temp}")
@@ -18,6 +18,7 @@ def rosenbrock2_grad(x, a, b):
     d1 = 2*(x1 - a) - 4*b*x1*(x2 - x1**2)
     d2 = 2*b*(x2 - x1**2)
     return np.array([d1, d2])
+
 
 def model4a_objective(u, A, g):
     u = np.asarray(u, float)
@@ -258,3 +259,5 @@ def beta_4(f_new,f_old,h_old):
         float: The computed beta_4 value.
     """
     return np.dot(f_new,f_new)/np.dot(h_old, (f_new-f_old))
+
+
