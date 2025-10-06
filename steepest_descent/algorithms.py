@@ -18,7 +18,6 @@ def steepest_descent(fun, grad, u, alpha=0.04):
         m_old, u - alpha * h (tuple): The minimum value of the objective function and the corresponding point.
     
     """
-    #TODO: implement steepest descent method
     m_new = fun(u)
     m_old = 10e100
     while m_new < m_old:
