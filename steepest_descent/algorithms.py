@@ -1,6 +1,11 @@
 import numpy as np
 import functions as fn
+import logging as log
 EPSILON = 1e-6
+
+def set_logging_level(level):
+    log.basicConfig(level=level)
+    fn.set_logging_level(level)
 
 def steepest_descent(fun, grad, u, alpha=0.04):
     """
@@ -55,6 +60,7 @@ def steepest_descent_backtracking(fun, grad, u, alpha=0.04, c=0.5, r=0.8):
             m_x = fun(u_x)
         m_new = m_x
         u = u_x
+        
     return m_old, u-alpha*h
            
 
@@ -86,9 +92,12 @@ def steepest_descent_conjugate(fun, grad, u, alpha_init=0.04, c=0.5, r=0.8, n=10
         m_new = m_x
         u = u_x
         count += 1
+    log.debug(f"m_old: {m_old}, m_new: {m_new}, ||g_new||: {np.linalg.norm(g_new)}, ||h_new||: {np.linalg.norm(h_new)}, alpha: {alpha}, count: {count}")
+    log.info(f"Conjugate Gradient converged in {count} iterations.")
     return m_old, u - alpha * h_new, count
 
 def __main__():
+    set_logging_level(log.DEBUG)
     # parameters for rosenbrock
     a = 1.0
     b = 10.0
@@ -186,24 +195,24 @@ def __main__():
     A = np.ones(148)
     
     # testing objective and gradients
-    print(fn.rosenbrock(x,a, b))
-    print(fn.rosenbrock2_grad(x, a, b))
-    print(fn.model4a_objective(u, A, g))
-    print(fn.model4a_gradient(u, A, g))
+    fn.rosenbrock(x,a, b)
+    fn.rosenbrock2_grad(x, a, b)
+    fn.model4a_objective(u, A, g)
+    fn.model4a_gradient(u, A, g)
 
     # Steepest Descent with backtracking
     f = lambda x: fn.rosenbrock(x, a, b)
     grad = lambda x: fn.rosenbrock2_grad(x, a, b)
-    print(steepest_descent_backtracking(f, grad, x, alpha=1))
+    steepest_descent_backtracking(f, grad, x, alpha=1)
     
     # Conjugate Gradient of rosenbrock
-    print(steepest_descent_conjugate(f, grad, x, alpha_init=1, n=20, beta=fn.beta_1))
+    steepest_descent_conjugate(f, grad, x, alpha_init=1, n=20, beta=fn.beta_1)
 
     # Conjugate Gradient of model4a
     u = np.zeros(80)
     f = lambda u: fn.model4a_objective(u, A, g)
     grad = lambda u: fn.model4a_gradient(u, A, g)
-    print(steepest_descent_conjugate(f, grad, u, alpha_init=1, n=20, beta=fn.beta_1))
+    steepest_descent_conjugate(f, grad, u, alpha_init=1, n=20, beta=fn.beta_1)
 
 
 

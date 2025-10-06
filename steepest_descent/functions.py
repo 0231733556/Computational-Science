@@ -1,8 +1,17 @@
-import numpy as np 
+import numpy as np
+import logging as log
+
+def set_logging_level(level):
+    log.basicConfig(level=level)
+
 SQRT2 = np.sqrt(2.0)
 # Rosenbrock
 def rosenbrock(x, a, b):
-    return (x[0] - a)**2 + b*(x[1]-x[0]**2)**2
+    temp=(x[0] - a)**2 + b*(x[1]-x[0]**2)**2
+      
+    log.debug(f"Evaluating rosenbrock at x={x}")
+    log.debug(f"rosenbrock value: {temp}")
+    return temp
 
 def rosenbrock2_grad(x, a, b):
     x1, x2 = x
