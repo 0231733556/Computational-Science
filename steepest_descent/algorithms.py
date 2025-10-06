@@ -1,6 +1,8 @@
 import numpy as np
 import functions as fn
 import logging as log
+import sympy as sp
+
 EPSILON = 1e-6
 
 def set_logging_level(level):
@@ -95,6 +97,21 @@ def steepest_descent_conjugate(fun, grad, u, alpha_init=0.04, c=0.5, r=0.8, n=10
     log.info(f"Conjugate Gradient converged in {count} iterations.")
     return m_old, u - alpha * h_new, count
 
+def newtons_method(fun,grad,u,tol):
+    """
+    Minimizes a given function using Newton's method.
+    
+    Args:
+        a (float): Parameter for the objective function.
+        g (np.ndarray): Gradient vector.
+        u (np.ndarray): Initial guess for the minimum.
+        tol (float): Tolerance for convergence.
+    
+    Returns:
+        u*,m(u*) (tuple): The minimum value of the objective function and the corresponding point.
+        """
+
+    
 def __main__():
     set_logging_level(log.INFO)
     # parameters for rosenbrock
