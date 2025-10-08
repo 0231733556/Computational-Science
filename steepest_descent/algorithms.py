@@ -131,7 +131,7 @@ def newtons_method(fun,grad,hess,u,tol):
     return u, fun(u)
 
 
-def main():
+def __main__():
     set_logging_level(log.DEBUG)
     # parameters for rosenbrock
     a = 1.0
@@ -250,13 +250,13 @@ def main():
     f = lambda u: fn.model4a_objective(u, A, g)
     grad = lambda u: fn.model4a_gradient(u, A, g)
     hess = lambda u: fn.model4a_hessian(u, A, g)
-    #print(hess(u))
+    print(hess(u))
     #steepest_descent_conjugate(f, grad, u, alpha_init=1, n=20, beta=fn.beta_1)
 
-    #newtons_method(f, grad, hess, u, tol=1e-6)
+    newtons_method(f, grad, hess, u, tol=1e-6)
 
 
-def __main__():
+def __main__test():
         # input for model4a
     u = np.array([
         0.8147,
@@ -433,9 +433,13 @@ def __main__():
     
     x = fn.model4a_objective(u, A, g)
     y = fn.model4a_gradient(u, A, g)
-    print(x)
+    #print(x)
     print("\n")
     print(y.round(4)-f)
+    hess = lambda u: fn.model4a_hessian(u, A, g)
+    print(hess(u))
+    
+    
     
 
 if __name__ == "__main__":

@@ -3,18 +3,29 @@ import numpy as np
 from sympy import Matrix
 from sympy.printing.pycode import pycode
 from math import sqrt
+from sympy.printing.pretty import pretty
 
 SQRT2 = sp.sqrt(2)
 
-def grad_solver(expr, vars):
+def grad_solver(expr, vars, file_name = None):
     grad = sp.Matrix([sp.diff(expr, var) for var in vars])
     grad = sp.simplify(grad)
-    sp.pprint(grad)
+    if file_name:
+        s = pretty(grad, use_unicode=True, wrap_line=False)   
+        with open(file_name, "w", encoding="utf-8") as f:
+            f.write(s)
+    else:
+        sp.pprint(grad)
 
-def hess_solver(expr, vars):
+def hess_solver(expr, vars, file_name = None):
     hess = sp.hessian(expr, vars)
     hess = sp.simplify(hess)
-    sp.pprint(hess)
+    if file_name:
+        s = pretty(hess, use_unicode=True, wrap_line=False)   
+        with open(file_name, "w", encoding="utf-8") as f:
+            f.write(s)
+    else:
+        sp.pprint(hess)
 
 # variables
 x1, x2, a, b = sp.symbols('x1 x2 a b')
@@ -86,13 +97,13 @@ def build_model4a_expr():
 
     return m, u, A, g
 
-#grad_solver(expr, (x1, x2))
+
+
+
 m, u, A, g = build_model4a_expr()
 
-
-
-
-grad_solver(m, u)
+print(m)
+print("\n")
+#grad_solver(m, u)
 print("\n") 
-#hess_solver(expr, (x1, x2))
-
+#hess_solver(m, u, file_name="hess_pretty.txt")

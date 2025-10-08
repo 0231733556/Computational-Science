@@ -102,41 +102,40 @@ def model4a_gradient(u, A, g, eps=1e-12):
 
     def add_term(coeffs_a, coeffs_b, c, w):
         """
-        Term: w * (sqrt(a^2 + b^2) - c)^2
-        a = const + sum_j coeffs_a[j] * u[j]
-        b = const + sum_j coeffs_b[j] * u[j]
+        Term: w * (sqrt(a[u]^2 + b[u]^2) - c)^2
+        a[u] = a_vec . u + a_const
+        b[u] = b_vec . u + b_const
         coeffs_* is list of tuples (index, coefficient, constant_contrib)
         Where constant_contrib is added only once to build a and b.
         """
-        # Build a, b; each tuple is (idx, coeff)
+        
+        a_vec = np.zeros(N, dtype=float)
+        b_vec = np.zeros(N, dtype=float)
         a_const = 0.0
         b_const = 0.0
-        a = 0.0
-        b = 0.0
+        # Building A, B
         for idx, coeff in coeffs_a:
-            if idx is None:  # use None to encode constants
+            if idx is not None:
+                a_vec[idx] += coeff
+            else:
                 a_const += coeff
-            else:
-                a += coeff * u[idx]
         for idx, coeff in coeffs_b:
-            if idx is None:
-                b_const += coeff
+            if idx is not None:
+                b_vec[idx] += coeff
             else:
-                b += coeff * u[idx]
-        a += a_const
-        b += b_const
+                b_const += coeff
 
+        # Computing a[u], b[u] and r
+        a = np.dot(a_vec, u) + a_const
+        b = np.dot(b_vec, u) + b_const
         r = np.hypot(a, b)
+
         if r < eps:
             return  # flat; contribution is zero in the limit (rare here)
         common = w * 2.0 * (r - c) / r
-        # ∂/∂u_j = common * (a*∂a/∂u_j + b*∂b/∂u_j)
-        for idx, coeff in coeffs_a:
-            if idx is not None:
-                grad[idx] += common * a * coeff
-        for idx, coeff in coeffs_b:
-            if idx is not None:
-                grad[idx] += common * b * coeff
+
+        # Adding component derivatives to total grad
+        np.add(grad, common * (a * a_vec + b * b_vec), out=grad)
 
     # Helper to convert 1-based MATLAB k -> 0-based index
     def I(k): return k-1
@@ -198,92 +197,105 @@ def model4a_gradient(u, A, g, eps=1e-12):
 def model4a_hessian(u, A, g, eps=1e-12):
     u = np.asarray(u, float)
     A = np.asarray(A, float)
+    N = u.size
     H = np.zeros((u.size, u.size), dtype=float)
 
-    def _term_values(u, a_idx, a_coeff, a_const, b_idx, b_coeff, b_const):
+    def _term_values(u, coeffs_a, coeffs_b):
         # a(u) = a_const + sum_j a_coeff[j] * u[a_idx[j]]
-        a = a_const + np.dot(a_coeff, u[a_idx]) if len(a_idx) else a_const
-        b = b_const + np.dot(b_coeff, u[b_idx]) if len(b_idx) else b_const
+        a_vec = np.zeros(N, dtype=float)
+        b_vec = np.zeros(N, dtype=float)
+        a_const = 0.0
+        b_const = 0.0
+        # Building A, B
+        for idx, coeff in coeffs_a:
+            if idx is not None:
+                a_vec[idx] += coeff
+            else:
+                a_const += coeff
+        for idx, coeff in coeffs_b:
+            if idx is not None:
+                b_vec[idx] += coeff
+            else:
+                b_const += coeff
+
+        # Computing a[u], b[u] and r
+        a = np.dot(a_vec, u) + a_const
+        b = np.dot(b_vec, u) + b_const
         r = np.hypot(a, b)
-        return a, b, r
+        return a_vec, b_vec, a, b, r
 
 
-    def _add_hess(u, H, w, c, a_idx, a_coeff, a_const, b_idx, b_coeff, b_const,
-              r_min=1e-8):
-        a, b, r = _term_values(u, a_idx, a_coeff, a_const, b_idx, b_coeff, b_const)
+    def _add_hess(coeffs_a, coeffs_b, c,  w, r_min=1e-8):
+
+        a_vec, b_vec, a, b, r = _term_values(u, coeffs_a, coeffs_b)
 
         # Clamp r away from zero
-        r = max(r, r_min)
+        #r = max(r, r_min)
         inv_r  = 1.0 / r
         inv_r3 = inv_r * inv_r * inv_r   # avoid r**3
 
-        # Build restricted derivatives on the involved index set S
-        S = list(dict.fromkeys(list(a_idx) + list(b_idx)))
-        m = len(S)
-        A = np.zeros(m); B = np.zeros(m)
-        for j, idx in enumerate(a_idx):
-            A[S.index(idx)] += a_coeff[j]
-        for j, idx in enumerate(b_idx):
-            B[S.index(idx)] += b_coeff[j]
+        lin_combo = a * a_vec + b * b_vec
 
-        va = a * A
-        vb = b * B
-        g  = (va + vb) * inv_r                     # ∇r on S
-        H_r = (np.outer(A, A) + np.outer(B, B)) * inv_r \
-            - np.outer(va + vb, va + vb) * inv_r3
+        # ∇r on S
+        hess = (np.outer(a_vec, a_vec) + np.outer(b_vec, b_vec)) * (1 - c * inv_r)
+        hess += np.outer(lin_combo, lin_combo) * c * inv_r3
 
-        K_S = 2.0 * w * (np.outer(g, g) + (r - c) * H_r)
+        np.add(H, 2.0 * w * hess, out=H)
 
-        # scatter-add
-        for p, ip in enumerate(S):
-            for q, iq in enumerate(S):
-                H[ip, iq] += K_S[p, q]
-
+    def I(k): return k-1
 
     # block 1
+    # 1) i=1..10
     for i in range(1, 11):
-        _add_hess(u, H, A[i-1], 1.0,
-                  [2*i-2], [1.0], 0.0,
-                  [2*i-1], [1.0], 1.0)
+        w = A[i-1]; c = 1.0
+        _add_hess([(I(2*i-1), 1.0)],
+                 [(None, 1.0), (I(2*i), 1.0)],
+                 c, w)
 
-    # block 2
+    # 2) i=1..9
     for i in range(1, 10):
-        _add_hess(u, H, A[10+i-1], SQRT2,
-                  [2*i],   [1.0], 1.0,
-                  [2*i+1], [1.0], 1.0)
+        w = A[10 + (i-1)]; c = SQRT2
+        _add_hess([(None, 1.0), (I(2*i+1), 1.0)],
+                 [(None, 1.0), (I(2*i+2), 1.0)],
+                 c, w)
 
-    # block 3
+    # 3) i=1..9
     for i in range(1, 10):
-        _add_hess(u, H, A[19+i-1], SQRT2,
-                  [2*i-2], [-1.0], 1.0,
-                  [2*i-1], [ 1.0], 1.0)
+        w = A[19 + (i-1)]; c = SQRT2
+        _add_hess([(None, 1.0), (I(2*i-1), -1.0)],
+                 [(None, 1.0), (I(2*i),   1.0)],
+                 c, w)
 
-    # block 4
+    # 4) i=1..30
     for i in range(1, 31):
-        _add_hess(u, H, A[28+i-1], 1.0,
-                  [2*i+18, 2*i-1], [1.0, -1.0], 1.0,
-                  [2*i+17, 2*i-2], [1.0, -1.0], 0.0)
+        w = A[28 + (i-1)]; c = 1.0
+        _add_hess([(None, 1.0), (I(2*i+20), 1.0), (I(2*i), -1.0)],
+                 [(I(2*i+19), 1.0), (I(2*i-1), -1.0)],
+                 c, w)
 
-    # block 5
+    # 5) i=1..36
     for i in range(1, 37):
         t = 2 * ((i-1)//9)
-        _add_hess(u, H, A[58+i-1], 1.0,
-                  [2*i-1+t, 2*i-3+t], [1.0, -1.0], 1.0,
-                  [2*i+t,   2*i-2+t], [1.0, -1.0], 0.0)
+        w = A[58 + (i-1)]; c = 1.0
+        _add_hess([(None, 1.0), (I(2*i+1+t), 1.0), (I(2*i-1+t), -1.0)],
+                 [(I(2*i+2+t), 1.0), (I(2*i+t), -1.0)],
+                 c, w)
 
-    # block 6
+    # 6) i=1..27
     for i in range(1, 28):
         t = 2 * ((i-1)//9)
-        _add_hess(u, H, A[94+i-1], SQRT2,
-                  [2*i+19+t, 2*i-3+t], [1.0, -1.0], 1.0,
-                  [2*i+20+t, 2*i-2+t], [1.0, -1.0], 1.0)
+        w = A[94 + (i-1)]; c = SQRT2
+        _add_hess([(None, 1.0), (I(2*i+21+t), 1.0), (I(2*i-1+t), -1.0)],
+                 [(None, 1.0), (I(2*i+22+t), 1.0), (I(2*i+t), -1.0)],
+                 c, w)
 
-    # block 7
+    # 7) i=1..27
     for i in range(1, 28):
         t = 2 * ((i-1)//9)
-        _add_hess(u, H, A[121+i-1], SQRT2,
-                  [2*i-1+t, 2*i+17+t], [1.0, -1.0], 1.0,
-                  [2*i+t,   2*i+18+t], [-1.0, 1.0], 1.0)
+        w = A[121 + (i-1)]; c = SQRT2
+        _add_hess([(None, 1.0), (I(2*i+1+t), 1.0), (I(2*i+19+t), -1.0)],
+                 [(None, 1.0), (I(2*i+20+t), 1.0), (I(2*i+2+t), -1.0)],
+                 c, w)
 
     return H   
 
