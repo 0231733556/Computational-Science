@@ -90,6 +90,8 @@ def build_model4a_expr():
 m, u, A, g = build_model4a_expr()
 
 
+
+
 grad_solver(m, u)
 print("\n") 
 #hess_solver(expr, (x1, x2))
