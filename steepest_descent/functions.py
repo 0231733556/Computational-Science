@@ -90,9 +90,16 @@ def model4a_objective(u, A, g):
     return m
 
 
-def model4a_gradient(u, A, g, eps=1e-12):
+def model4a_gradient(u, A, g, eps=1e-12) -> np.ndarray:
     """
-    Hard-coded analytic gradient of model4a_objective. Returns shape (80,).
+    Compute the gradient of the model4a objective function at point u.
+    Args:
+        u (np.ndarray): The point at which to evaluate the gradient.
+        A (np.ndarray): The weights for the terms in the objective.
+        g (np.ndarray): The linear coefficients in the objective.
+        eps (float): Small value to avoid division by zero.
+    Returns:
+        np.ndarray: The gradient vector at point u.
     """
     u = np.asarray(u, float)
     A = np.asarray(A, float)
@@ -100,20 +107,30 @@ def model4a_gradient(u, A, g, eps=1e-12):
     N = u.size
     grad = -g.copy()
 
-    def add_term(coeffs_a, coeffs_b, c, w):
+    def add_term(coeffs_a, coeffs_b, c : float, w : float) -> None:
         """
         Term: w * (sqrt(a[u]^2 + b[u]^2) - c)^2
         a[u] = a_vec . u + a_const
         b[u] = b_vec . u + b_const
         coeffs_* is list of tuples (index, coefficient, constant_contrib)
         Where constant_contrib is added only once to build a and b.
+        
+        Args:
+            coeffs_a (list of (int or None, float)): Coefficients for a
+            coeffs_b (list of (int or None, float)): Coefficients for b
+            c (float): Constant to subtract from sqrt(a^2 + b^2)
+            w (float): Weight of the term
+        Returns:
+            None: Updates grad in place
         """
         
         a_vec = np.zeros(N, dtype=float)
         b_vec = np.zeros(N, dtype=float)
         a_const = 0.0
         b_const = 0.0
+        #a
         # Building A, B
+        
         for idx, coeff in coeffs_a:
             if idx is not None:
                 a_vec[idx] += coeff
@@ -194,13 +211,23 @@ def model4a_gradient(u, A, g, eps=1e-12):
 
     return grad
 
-def model4a_hessian(u, A, g, eps=1e-12):
+def model4a_hessian(u, A, g, eps=1e-12) -> np.ndarray:
+    """
+    Compute the Hessian matrix of the model4a objective function at point u.
+    Args:
+        u (np.ndarray): The point at which to evaluate the Hessian.
+        A (np.ndarray): The weights for the terms in the objective.
+        g (np.ndarray): The linear coefficients in the objective.
+        eps (float): Small value to avoid division by zero.
+    Returns:
+        np.ndarray: The Hessian matrix at point u.
+    """
     u = np.asarray(u, float)
     A = np.asarray(A, float)
     N = u.size
     H = np.zeros((u.size, u.size), dtype=float)
 
-    def _term_values(u, coeffs_a, coeffs_b):
+    def _term_values(u, coeffs_a, coeffs_b)-> tuple[np.ndarray, np.ndarray, float, float, float]:
         # a(u) = a_const + sum_j a_coeff[j] * u[a_idx[j]]
         a_vec = np.zeros(N, dtype=float)
         b_vec = np.zeros(N, dtype=float)
@@ -225,8 +252,19 @@ def model4a_hessian(u, A, g, eps=1e-12):
         return a_vec, b_vec, a, b, r
 
 
-    def _add_hess(coeffs_a, coeffs_b, c,  w, r_min=1e-8):
-
+    def _add_hess(coeffs_a, coeffs_b, c,  w, r_min=1e-8)-> None:
+        """ 
+        Add the Hessian contribution of a term
+        
+        Args:
+            coeffs_a (list of (int or None, float)): Coefficients for a
+            coeffs_b (list of (int or None, float)): Coefficients for b
+            c (float): Constant to subtract from sqrt(a^2 + b^2)
+            w (float): Weight of the term
+            r_min (float): Minimum r to avoid division by zero
+        Returns:
+            None: Updates H in place
+        """
         a_vec, b_vec, a, b, r = _term_values(u, coeffs_a, coeffs_b)
 
         # Clamp r away from zero
