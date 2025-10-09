@@ -97,13 +97,32 @@ def build_model4a_expr():
 
     return m, u, A, g
 
+def term_expr():
+    '''
+    Term: w * (sqrt(a[u]^2 + b[u]^2) - c)^2
+    a[u] = a_vec . u + a_const
+    b[u] = b_vec . u + b_const
+    '''
+    N = 1
+    u = sp.symbols(f'u1:{N+1}')      
+    A = sp.symbols(f'w1:{N+1}')
+    c = sp.symbols('c')
+    a_vec = sp.symbols(f'a_coeff1:{N+1}')
+    alpha = sp.symbols('alpha')
+    b_vec = sp.symbols(f'b_vec1:{N+1}')
+    beta = sp.symbols('beta')
+    a = np.sum([a_vec[i] * u[i] for i in range(N)]) + alpha
+    b = np.sum([b_vec[i] * u[i] for i in range(N)]) + beta
+
+    m = A[0] * (sp.sqrt(a**2 + b**2) - c)**2
+    return m, u
 
 
-
-m, u, A, g = build_model4a_expr()
+#m, u, A, g = build_model4a_expr()
+m, u = term_expr()
 
 print(m)
 print("\n")
-#grad_solver(m, u)
-print("\n") 
-#hess_solver(m, u, file_name="hess_pretty.txt")
+grad_solver(m, u, file_name="printout_grad.txt")
+print("\n")
+hess_solver(m, u, file_name="printout_hess.txt")
