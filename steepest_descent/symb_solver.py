@@ -98,11 +98,28 @@ def build_model4a_expr():
     return m, u, A, g
 
 def term_expr():
-    '''
-    Term: w * (sqrt(a[u]^2 + b[u]^2) - c)^2
-    a[u] = a_vec . u + a_const
-    b[u] = b_vec . u + b_const
-    '''
+    """
+    Return a symbolic term and the symbolic input vector for the expression
+    w * (sqrt(a(u)^2 + b(u)^2) - c)^2.
+
+    This function constructs symbolic variables using sympy and builds the term
+    m = A[0] * (sqrt(a**2 + b**2) - c)**2 where
+        a = a_vec . u + alpha
+        b = b_vec . u + beta
+
+    Notes
+    - The function creates symbol arrays for u, A (weights), a_vec, b_vec and the
+      scalars c, alpha, beta. In the current implementation N is set to 1, so
+      u, A, a_vec and b_vec contain a single element each.
+    - The returned expression m is a sympy expression; u is the tuple of sympy
+      symbols representing the input vector components.
+    - The implementation expects sympy to be available as the name `sp` and numpy
+      as `np` in the module namespace.
+
+    Returns
+    - m (sympy.Expr): symbolic expression for the term w*(sqrt(a(u)^2 + b(u)^2)-c)^2
+    - u (tuple(sympy.Symbol)): tuple of sympy symbols for the components of u
+    """
     N = 1
     u = sp.symbols(f'u1:{N+1}')      
     A = sp.symbols(f'w1:{N+1}')

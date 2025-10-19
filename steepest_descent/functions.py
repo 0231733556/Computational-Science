@@ -157,6 +157,10 @@ def model4a_gradient(u, A, g, eps=1e-12) -> np.ndarray:
     # Helper to convert 1-based MATLAB k -> 0-based index
     def I(k): return k-1
 
+    #pass (None,CONSTANT) to indicate constant term
+    #pass (INDEX,COEFFICIENT) to indicate variable term, use sign of coefficient for +/- in term
+    #pass terms sequewntially to build a and b, first a then b in expressiion sqrt(a^2 + b^2) using [] of tuples
+    
     # 1) i=1..10
     for i in range(1, 11):
         w = A[i-1]; c = 1.0
@@ -228,6 +232,44 @@ def model4a_hessian(u, A, g, eps=1e-12) -> np.ndarray:
     H = np.zeros((u.size, u.size), dtype=float)
 
     def _term_values(u, coeffs_a, coeffs_b)-> tuple[np.ndarray, np.ndarray, float, float, float]:
+        """
+        Compute coefficient vectors and scalar term values from sparse coefficient specifications.
+
+        This function constructs two dense coefficient vectors a_vec and b_vec (length N) from
+        iterables of (index, coefficient) pairs, computes the linear combinations a = a_vec·u + a_const
+        and b = b_vec·u + b_const, and returns those vectors together with the scalars a, b and r,
+        where r = hypot(a, b) = sqrt(a**2 + b**2).
+
+        Parameters
+        ----------
+        u : numpy.ndarray
+            1-D array of length N representing the current variable vector u.
+        coeffs_a : Iterable[tuple[int|None, float]]
+            Iterable of (index, coefficient) pairs describing the contribution to a(u).
+            - If index is an int, the coefficient is added to a_vec[index].
+            - If index is None, the coefficient is treated as a constant term added to a_const.
+        coeffs_b : Iterable[tuple[int|None, float]]
+            Iterable of (index, coefficient) pairs describing the contribution to b(u),
+            using the same convention as coeffs_a.
+
+        Returns
+        -------
+        tuple[numpy.ndarray, numpy.ndarray, float, float, float]
+            A 5-tuple containing:
+            - a_vec: numpy.ndarray of shape (N,) with accumulated coefficients for a(u).
+            - b_vec: numpy.ndarray of shape (N,) with accumulated coefficients for b(u).
+            - a: float, the scalar value a = a_vec.dot(u) + a_const.
+            - b: float, the scalar value b = b_vec.dot(u) + b_const.
+            - r: float, the Euclidean norm hypot(a, b) = sqrt(a**2 + b**2).
+
+        Notes
+        -----
+        - The function expects that a working value N (the length of the coefficient vectors)
+          is available in the surrounding scope or that len(u) matches the intended size.
+        - It is the caller's responsibility to ensure that any integer indices provided in
+          coeffs_a and coeffs_b are within the valid range [0, N-1]. Out-of-range indices will
+          raise an IndexError when applied to the underlying arrays.
+        """
         # a(u) = a_const + sum_j a_coeff[j] * u[a_idx[j]]
         a_vec = np.zeros(N, dtype=float)
         b_vec = np.zeros(N, dtype=float)
@@ -284,6 +326,11 @@ def model4a_hessian(u, A, g, eps=1e-12) -> np.ndarray:
 
     # block 1
     # 1) i=1..10
+    
+    #pass (None,CONSTANT) to indicate constant term
+    #pass (INDEX,COEFFICIENT) to indicate variable term, use sign of coefficient for +/- in term
+    #pass terms sequewntially to build a and b, first a then b in expressiion sqrt(a^2 + b^2) using [] of tuples
+    
     for i in range(1, 11):
         w = A[i-1]; c = 1.0
         _add_hess([(I(2*i-1), 1.0)],
