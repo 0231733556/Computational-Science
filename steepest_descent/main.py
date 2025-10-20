@@ -42,4 +42,5 @@ def test_suite():
     assert np.allclose(should_be_zero, 0)
 
 if __name__ == "__main__":
+    test_suite()
     __main__()

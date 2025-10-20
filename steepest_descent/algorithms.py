@@ -89,6 +89,7 @@ def steepest_descent_conjugate(fun, grad, u, alpha_init=0.04, c=0.5, r=0.8, n=10
         alpha = 1 / r * alpha_init
         m_x = 10e100
         u_x = u
+        # armijo condition aka sufficient descent
         while m_x > m_new + c * alpha * np.dot(h_new, g_new):
             alpha = r * alpha
             u_x = u + alpha * h_new

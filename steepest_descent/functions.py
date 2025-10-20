@@ -25,213 +25,9 @@ def rosenbrock_hess(x, a, b):
     h22 = 2*b
     return np.array([[h11, h12], [h21, h22]])
 
-def model4a_objective(u, A, g):
-    u = np.asarray(u, float)
-    A = np.asarray(A, float)
-    g = np.asarray(g, float)
-
-    def U(k):  # 1-based MATLAB index -> 0-based Python
-        return u[k-1]
-
-    m = -np.dot(g, u)
-
-    # 1) i=1..10
-    for i in range(1, 11):
-        a = U(2*i-1)
-        b = 1.0 + U(2*i)
-        r = np.hypot(a, b)
-        m += A[i-1] * (r - 1.0)**2
-
-    # 2) i=1..9
-    for i in range(1, 10):
-        a = 1.0 + U(2*i+1)
-        b = 1.0 + U(2*i+2)
-        r = np.hypot(a, b)
-        m += A[10 + (i-1)] * (r - SQRT2)**2
-
-    # 3) i=1..9
-    for i in range(1, 10):
-        a = 1.0 - U(2*i-1)
-        b = 1.0 + U(2*i)
-        r = np.hypot(a, b)
-        m += A[19 + (i-1)] * (r - SQRT2)**2
-
-    # 4) i=1..30
-    for i in range(1, 31):
-        a = 1.0 + U(2*i+20) - U(2*i)
-        b =        U(2*i+19) - U(2*i-1)
-        r = np.hypot(a, b)
-        m += A[28 + (i-1)] * (r - 1.0)**2
-
-    # 5) i=1..36   (block offset t = 2*floor((i-1)/9))
-    for i in range(1, 37):
-        t = 2 * ((i-1)//9)
-        a = 1.0 + U(2*i+1+t) - U(2*i-1+t)
-        b =        U(2*i+2+t) - U(2*i  +t)
-        r = np.hypot(a, b)
-        m += A[58 + (i-1)] * (r - 1.0)**2
-
-    # 6) i=1..27
-    for i in range(1, 28):
-        t = 2 * ((i-1)//9)
-        a = 1.0 + U(2*i+21+t) - U(2*i-1+t)
-        b = 1.0 + U(2*i+22+t) - U(2*i  +t)
-        r = np.hypot(a, b)
-        m += A[94 + (i-1)] * (r - SQRT2)**2
-
-    # 7) i=1..27
-    for i in range(1, 28):
-        t = 2 * ((i-1)//9)
-        a = 1.0 - U(2*i+19+t) + U(2*i+1+t)
-        b = 1.0 + U(2*i+20+t) - U(2*i+2+t)
-        r = np.hypot(a, b)
-        m += A[121 + (i-1)] * (r - SQRT2)**2
-
-    return m
-
-
-def model4a_gradient(u, A, g, eps=1e-12) -> np.ndarray:
-    """
-    Compute the gradient of the model4a objective function at point u.
-    Args:
-        u (np.ndarray): The point at which to evaluate the gradient.
-        A (np.ndarray): The weights for the terms in the objective.
-        g (np.ndarray): The linear coefficients in the objective.
-        eps (float): Small value to avoid division by zero.
-    Returns:
-        np.ndarray: The gradient vector at point u.
-    """
-    u = np.asarray(u, float)
-    A = np.asarray(A, float)
-    g = np.asarray(g, float)
-    N = u.size
-    grad = -g.copy()
-
-    def add_term(coeffs_a, coeffs_b, c : float, w : float) -> None:
-        """
-        Term: w * (sqrt(a[u]^2 + b[u]^2) - c)^2
-        a[u] = a_vec . u + a_const
-        b[u] = b_vec . u + b_const
-        coeffs_* is list of tuples (index, coefficient, constant_contrib)
-        Where constant_contrib is added only once to build a and b.
-        
-        Args:
-            coeffs_a (list of (int or None, float)): Coefficients for a
-            coeffs_b (list of (int or None, float)): Coefficients for b
-            c (float): Constant to subtract from sqrt(a^2 + b^2)
-            w (float): Weight of the term
-        Returns:
-            None: Updates grad in place
-        """
-        
-        a_vec = np.zeros(N, dtype=float)
-        b_vec = np.zeros(N, dtype=float)
-        a_const = 0.0
-        b_const = 0.0
-        #a
-        # Building A, B
-        
-        for idx, coeff in coeffs_a:
-            if idx is not None:
-                a_vec[idx] += coeff
-            else:
-                a_const += coeff
-        for idx, coeff in coeffs_b:
-            if idx is not None:
-                b_vec[idx] += coeff
-            else:
-                b_const += coeff
-
-        # Computing a[u], b[u] and r
-        a = np.dot(a_vec, u) + a_const
-        b = np.dot(b_vec, u) + b_const
-        r = np.hypot(a, b)
-
-        if r < eps:
-            return  # flat; contribution is zero in the limit (rare here)
-        common = w * 2.0 * (r - c) / r
-
-        # Adding component derivatives to total grad
-        np.add(grad, common * (a * a_vec + b * b_vec), out=grad)
-
-    # Helper to convert 1-based MATLAB k -> 0-based index
-    def I(k): return k-1
-
-    #pass (None,CONSTANT) to indicate constant term
-    #pass (INDEX,COEFFICIENT) to indicate variable term, use sign of coefficient for +/- in term
-    #pass terms sequewntially to build a and b, first a then b in expressiion sqrt(a^2 + b^2) using [] of tuples
-    
-    # 1) i=1..10
-    for i in range(1, 11):
-        w = A[i-1]; c = 1.0
-        add_term([(I(2*i-1), 1.0)],
-                 [(None, 1.0), (I(2*i), 1.0)],
-                 c, w)
-
-    # 2) i=1..9
-    for i in range(1, 10):
-        w = A[10 + (i-1)]; c = SQRT2
-        add_term([(None, 1.0), (I(2*i+1), 1.0)],
-                 [(None, 1.0), (I(2*i+2), 1.0)],
-                 c, w)
-
-    # 3) i=1..9
-    for i in range(1, 10):
-        w = A[19 + (i-1)]; c = SQRT2
-        add_term([(None, 1.0), (I(2*i-1), -1.0)],
-                 [(None, 1.0), (I(2*i),   1.0)],
-                 c, w)
-
-    # 4) i=1..30
-    for i in range(1, 31):
-        w = A[28 + (i-1)]; c = 1.0
-        add_term([(None, 1.0), (I(2*i+20), 1.0), (I(2*i), -1.0)],
-                 [(I(2*i+19), 1.0), (I(2*i-1), -1.0)],
-                 c, w)
-
-    # 5) i=1..36
-    for i in range(1, 37):
-        t = 2 * ((i-1)//9)
-        w = A[58 + (i-1)]; c = 1.0
-        add_term([(None, 1.0), (I(2*i+1+t), 1.0), (I(2*i-1+t), -1.0)],
-                 [(I(2*i+2+t), 1.0), (I(2*i+t), -1.0)],
-                 c, w)
-
-    # 6) i=1..27
-    for i in range(1, 28):
-        t = 2 * ((i-1)//9)
-        w = A[94 + (i-1)]; c = SQRT2
-        add_term([(None, 1.0), (I(2*i+21+t), 1.0), (I(2*i-1+t), -1.0)],
-                 [(None, 1.0), (I(2*i+22+t), 1.0), (I(2*i+t), -1.0)],
-                 c, w)
-
-    # 7) i=1..27
-    for i in range(1, 28):
-        t = 2 * ((i-1)//9)
-        w = A[121 + (i-1)]; c = SQRT2
-        add_term([(None, 1.0), (I(2*i+1+t), 1.0), (I(2*i+19+t), -1.0)],
-                 [(None, 1.0), (I(2*i+20+t), 1.0), (I(2*i+2+t), -1.0)],
-                 c, w)
-
-    return grad
-
-def model4a_hessian(u, A, g, eps=1e-12) -> np.ndarray:
-    """
-    Compute the Hessian matrix of the model4a objective function at point u.
-    Args:
-        u (np.ndarray): The point at which to evaluate the Hessian.
-        A (np.ndarray): The weights for the terms in the objective.
-        g (np.ndarray): The linear coefficients in the objective.
-        eps (float): Small value to avoid division by zero.
-    Returns:
-        np.ndarray: The Hessian matrix at point u.
-    """
-    u = np.asarray(u, float)
-    A = np.asarray(A, float)
-    N = u.size
-    H = np.zeros((u.size, u.size), dtype=float)
-
-    def _term_values(u, coeffs_a, coeffs_b)-> tuple[np.ndarray, np.ndarray, float, float, float]:
+def _term_values(u: np.ndarray,
+                coeffs_a: np.ndarray,
+                coeffs_b: np.ndarray)-> tuple[np.ndarray, np.ndarray, float, float, float]:
         """
         Compute coefficient vectors and scalar term values from sparse coefficient specifications.
 
@@ -271,6 +67,7 @@ def model4a_hessian(u, A, g, eps=1e-12) -> np.ndarray:
           raise an IndexError when applied to the underlying arrays.
         """
         # a(u) = a_const + sum_j a_coeff[j] * u[a_idx[j]]
+        N = u.size
         a_vec = np.zeros(N, dtype=float)
         b_vec = np.zeros(N, dtype=float)
         a_const = 0.0
@@ -292,35 +89,264 @@ def model4a_hessian(u, A, g, eps=1e-12) -> np.ndarray:
         b = np.dot(b_vec, u) + b_const
         r = np.hypot(a, b)
         return a_vec, b_vec, a, b, r
+    
+    
+def _add_obj(u: np.ndarray,
+              coeffs_a: np.ndarray,
+              coeffs_b: np.ndarray,
+              c: float,
+              w: float,
+              m: np.ndarray) -> None:
+    """
+    Term: w * (sqrt(a[u]^2 + b[u]^2) - c)^2
+    a[u] = a_vec . u + a_const
+    b[u] = b_vec . u + b_const
+    coeffs_* is list of tuples (index, coefficient, constant_contrib)
+    Where constant_contrib is added only once to build a and b.
+    
+    Args:
+        coeffs_a (list of (int or None, float)): Coefficients for a
+        coeffs_b (list of (int or None, float)): Coefficients for b
+        c (float): Constant to subtract from sqrt(a^2 + b^2)
+        w (float): Weight of the term
+    Returns:
+        None: Updates total 
+    """
+    a_vec, b_vec, a, b, r = _term_values(u, coeffs_a, coeffs_b)
 
 
-    def _add_hess(coeffs_a, coeffs_b, c,  w, r_min=1e-8)-> None:
-        """ 
-        Add the Hessian contribution of a term
-        
-        Args:
-            coeffs_a (list of (int or None, float)): Coefficients for a
-            coeffs_b (list of (int or None, float)): Coefficients for b
-            c (float): Constant to subtract from sqrt(a^2 + b^2)
-            w (float): Weight of the term
-            r_min (float): Minimum r to avoid division by zero
-        Returns:
-            None: Updates H in place
-        """
-        a_vec, b_vec, a, b, r = _term_values(u, coeffs_a, coeffs_b)
+    # Adding component derivatives to total 
+    np.add(m, w * (r - c) ** 2, out=m)
 
-        # Clamp r away from zero
-        #r = max(r, r_min)
-        inv_r  = 1.0 / r
-        inv_r3 = inv_r * inv_r * inv_r   # avoid r**3
+def _add_grad(u: np.ndarray,
+              coeffs_a: np.ndarray,
+              coeffs_b: np.ndarray,
+              c: float,
+              w: float,
+              grad: np.ndarray,
+              eps=1e-12) -> None:
+    """
+    Term: w * (sqrt(a[u]^2 + b[u]^2) - c)^2
+    a[u] = a_vec . u + a_const
+    b[u] = b_vec . u + b_const
+    coeffs_* is list of tuples (index, coefficient, constant_contrib)
+    Where constant_contrib is added only once to build a and b.
+    
+    Args:
+        coeffs_a (list of (int or None, float)): Coefficients for a
+        coeffs_b (list of (int or None, float)): Coefficients for b
+        c (float): Constant to subtract from sqrt(a^2 + b^2)
+        w (float): Weight of the term
+    Returns:
+        None: Updates grad in place
+    """
+    a_vec, b_vec, a, b, r = _term_values(u, coeffs_a, coeffs_b)
 
-        lin_combo = a * a_vec + b * b_vec
+    if r < eps:
+        return  # flat; contribution is zero in the limit (rare here)
+    common = w * 2.0 * (r - c) / r
 
-        # ∇r on S
-        hess = (np.outer(a_vec, a_vec) + np.outer(b_vec, b_vec)) * (1 - c * inv_r)
-        hess += np.outer(lin_combo, lin_combo) * c * inv_r3
+    # Adding component derivatives to total grad
+    np.add(grad, common * (a * a_vec + b * b_vec), out=grad)
 
-        np.add(H, 2.0 * w * hess, out=H)
+def _add_hess(u: np.ndarray,
+              coeffs_a: np.ndarray,
+              coeffs_b: np.ndarray,
+              c: float,
+              w: float,
+              H: np.ndarray)-> None:
+    """ 
+    Add the Hessian contribution of a term
+    
+    Args:
+        u (vector): the input for the hessian
+        coeffs_a (list of (int or None, float)): Coefficients for a
+        coeffs_b (list of (int or None, float)): Coefficients for b
+        c (float): Constant to subtract from sqrt(a^2 + b^2)
+        w (float): Weight of the term
+        H (matrix): the hessian matrix to which we add our component's hessian (adding to the total)
+        r_min (float): Minimum r to avoid division by zero
+    Returns:
+        None: Updates H in place
+    """
+    a_vec, b_vec, a, b, r = _term_values(u, coeffs_a, coeffs_b)
+
+    # Clamp r away from zero
+    #r = max(r, r_min)
+    inv_r  = 1.0 / r
+    inv_r3 = inv_r * inv_r * inv_r   # avoid r**3
+
+    lin_combo = a * a_vec + b * b_vec
+
+    # ∇r on S
+    hess = (np.outer(a_vec, a_vec) + np.outer(b_vec, b_vec)) * (1 - c * inv_r)
+    hess += np.outer(lin_combo, lin_combo) * c * inv_r3
+
+    np.add(H, 2.0 * w * hess, out=H)
+
+def model4a_objective(u, A, g):
+    u = np.asarray(u, float)
+    A = np.asarray(A, float)
+    g = np.asarray(g, float)
+
+    def I(k):  # 1-based MATLAB index -> 0-based Python
+        return k-1
+
+    m = np.array(-np.dot(g, u), dtype=float)
+
+    # 1) i=1..10: a = u_{2i-1}, b = 1 + u_{2i}, c = 1
+    for i in range(1, 11):
+        _add_obj(u,
+                 [(I(2*i-1), 1.0)],
+                 [(None, 1.0), (I(2*i), 1.0)],
+                 c=1.0, w=A[i-1], m=m)
+
+    # 2) i=1..9: a = 1 + u_{2i+1}, b = 1 + u_{2i+2}, c = sqrt(2)
+    for i in range(1, 10):
+        _add_obj(u,
+                 [(None, 1.0), (I(2*i+1), 1.0)],
+                 [(None, 1.0), (I(2*i+2), 1.0)],
+                 c=SQRT2, w=A[10 + (i-1)], m=m)
+
+    # 3) i=1..9: a = 1 - u_{2i-1}, b = 1 + u_{2i}, c = sqrt(2)
+    for i in range(1, 10):
+        _add_obj(u,
+                 [(None, 1.0), (I(2*i-1), -1.0)],
+                 [(None, 1.0), (I(2*i),   1.0)],
+                 c=SQRT2, w=A[19 + (i-1)], m=m)
+
+    # 4) i=1..30: a = 1 + u_{2i+20} - u_{2i}, b = u_{2i+19} - u_{2i-1}, c = 1
+    for i in range(1, 31):
+        _add_obj(u,
+                 [(None, 1.0), (I(2*i+20), 1.0), (I(2*i), -1.0)],
+                 [(I(2*i+19), 1.0), (I(2*i-1), -1.0)],
+                 c=1.0, w=A[28 + (i-1)], m=m)
+
+    # 5) i=1..36, t = 2*floor((i-1)/9):
+    #    a = 1 + u_{2i+1+t} - u_{2i-1+t},  b = u_{2i+2+t} - u_{2i+t},  c = 1
+    for i in range(1, 37):
+        t = 2 * ((i-1)//9)
+        _add_obj(u,
+                 [(None, 1.0), (I(2*i+1+t), 1.0), (I(2*i-1+t), -1.0)],
+                 [(I(2*i+2+t), 1.0), (I(2*i+t), -1.0)],
+                 c=1.0, w=A[58 + (i-1)], m=m)
+
+    # 6) i=1..27, t = 2*floor((i-1)/9):
+    #    a = 1 + u_{2i+21+t} - u_{2i-1+t},
+    #    b = 1 + u_{2i+22+t} - u_{2i+t},  c = sqrt(2)
+    for i in range(1, 28):
+        t = 2 * ((i-1)//9)
+        _add_obj(u,
+                 [(None, 1.0), (I(2*i+21+t), 1.0), (I(2*i-1+t), -1.0)],
+                 [(None, 1.0), (I(2*i+22+t), 1.0), (I(2*i+t), -1.0)],
+                 c=SQRT2, w=A[94 + (i-1)], m=m)
+
+    # 7) i=1..27, t = 2*floor((i-1)/9):
+    #    a = 1 - u_{2i+19+t} + u_{2i+1+t},
+    #    b = 1 + u_{2i+20+t} - u_{2i+2+t},  c = sqrt(2)
+    for i in range(1, 28):
+        t = 2 * ((i-1)//9)
+        _add_obj(u,
+                 [(None, 1.0), (I(2*i+1+t), 1.0), (I(2*i+19+t), -1.0)],
+                 [(None, 1.0), (I(2*i+20+t), 1.0), (I(2*i+2+t), -1.0)],
+                 c=SQRT2, w=A[121 + (i-1)], m=m)
+
+    return m
+
+
+def model4a_gradient(u, A, g) -> np.ndarray:
+    """
+    Compute the gradient of the model4a objective function at point u.
+    Args:
+        u (np.ndarray): The point at which to evaluate the gradient.
+        A (np.ndarray): The weights for the terms in the objective.
+        g (np.ndarray): The linear coefficients in the objective.
+        eps (float): Small value to avoid division by zero.
+    Returns:
+        np.ndarray: The gradient vector at point u.
+    """
+    u = np.asarray(u, float)
+    A = np.asarray(A, float)
+    g = np.asarray(g, float)
+    # derivative of first sum component
+    grad = -g.copy()
+    
+
+    # Helper to convert 1-based MATLAB k -> 0-based index
+    def I(k): return k-1
+
+    #pass (None,CONSTANT) to indicate constant term
+    #pass (INDEX,COEFFICIENT) to indicate variable term, use sign of coefficient for +/- in term
+    #pass terms sequewntially to build a and b, first a then b in expressiion sqrt(a^2 + b^2) using [] of tuples
+    
+    # 1) i=1..10
+    for i in range(1, 11):
+        w = A[i-1]; c = 1.0
+        _add_grad(u, [(I(2*i-1), 1.0)],
+                 [(None, 1.0), (I(2*i), 1.0)],
+                 c, w, grad)
+
+    # 2) i=1..9
+    for i in range(1, 10):
+        w = A[10 + (i-1)]; c = SQRT2
+        _add_grad(u, [(None, 1.0), (I(2*i+1), 1.0)],
+                 [(None, 1.0), (I(2*i+2), 1.0)],
+                 c, w, grad)
+
+    # 3) i=1..9
+    for i in range(1, 10):
+        w = A[19 + (i-1)]; c = SQRT2
+        _add_grad(u, [(None, 1.0), (I(2*i-1), -1.0)],
+                 [(None, 1.0), (I(2*i),   1.0)],
+                 c, w, grad)
+
+    # 4) i=1..30
+    for i in range(1, 31):
+        w = A[28 + (i-1)]; c = 1.0
+        _add_grad(u, [(None, 1.0), (I(2*i+20), 1.0), (I(2*i), -1.0)],
+                 [(I(2*i+19), 1.0), (I(2*i-1), -1.0)],
+                 c, w, grad)
+
+    # 5) i=1..36
+    for i in range(1, 37):
+        t = 2 * ((i-1)//9)
+        w = A[58 + (i-1)]; c = 1.0
+        _add_grad(u, [(None, 1.0), (I(2*i+1+t), 1.0), (I(2*i-1+t), -1.0)],
+                 [(I(2*i+2+t), 1.0), (I(2*i+t), -1.0)],
+                 c, w, grad)
+
+    # 6) i=1..27
+    for i in range(1, 28):
+        t = 2 * ((i-1)//9)
+        w = A[94 + (i-1)]; c = SQRT2
+        _add_grad(u, [(None, 1.0), (I(2*i+21+t), 1.0), (I(2*i-1+t), -1.0)],
+                 [(None, 1.0), (I(2*i+22+t), 1.0), (I(2*i+t), -1.0)],
+                 c, w, grad)
+
+    # 7) i=1..27
+    for i in range(1, 28):
+        t = 2 * ((i-1)//9)
+        w = A[121 + (i-1)]; c = SQRT2
+        _add_grad(u, [(None, 1.0), (I(2*i+1+t), 1.0), (I(2*i+19+t), -1.0)],
+                 [(None, 1.0), (I(2*i+20+t), 1.0), (I(2*i+2+t), -1.0)],
+                 c, w, grad)
+
+    return grad
+
+def model4a_hessian(u, A, g, eps=1e-12) -> np.ndarray:
+    """
+    Compute the Hessian matrix of the model4a objective function at point u.
+    Args:
+        u (np.ndarray): The point at which to evaluate the Hessian.
+        A (np.ndarray): The weights for the terms in the objective.
+        g (np.ndarray): The linear coefficients in the objective.
+        eps (float): Small value to avoid division by zero.
+    Returns:
+        np.ndarray: The Hessian matrix at point u.
+    """
+    u = np.asarray(u, float)
+    A = np.asarray(A, float)
+    H = np.zeros((u.size, u.size), dtype=float)
 
     def I(k): return k-1
 
@@ -333,54 +359,54 @@ def model4a_hessian(u, A, g, eps=1e-12) -> np.ndarray:
     
     for i in range(1, 11):
         w = A[i-1]; c = 1.0
-        _add_hess([(I(2*i-1), 1.0)],
+        _add_hess(u, [(I(2*i-1), 1.0)],
                  [(None, 1.0), (I(2*i), 1.0)],
-                 c, w)
+                 c, w, H)
 
     # 2) i=1..9
     for i in range(1, 10):
         w = A[10 + (i-1)]; c = SQRT2
-        _add_hess([(None, 1.0), (I(2*i+1), 1.0)],
+        _add_hess(u, [(None, 1.0), (I(2*i+1), 1.0)],
                  [(None, 1.0), (I(2*i+2), 1.0)],
-                 c, w)
+                 c, w, H)
 
     # 3) i=1..9
     for i in range(1, 10):
         w = A[19 + (i-1)]; c = SQRT2
-        _add_hess([(None, 1.0), (I(2*i-1), -1.0)],
+        _add_hess(u, [(None, 1.0), (I(2*i-1), -1.0)],
                  [(None, 1.0), (I(2*i),   1.0)],
-                 c, w)
+                 c, w, H)
 
     # 4) i=1..30
     for i in range(1, 31):
         w = A[28 + (i-1)]; c = 1.0
-        _add_hess([(None, 1.0), (I(2*i+20), 1.0), (I(2*i), -1.0)],
+        _add_hess(u, [(None, 1.0), (I(2*i+20), 1.0), (I(2*i), -1.0)],
                  [(I(2*i+19), 1.0), (I(2*i-1), -1.0)],
-                 c, w)
+                 c, w, H)
 
     # 5) i=1..36
     for i in range(1, 37):
         t = 2 * ((i-1)//9)
         w = A[58 + (i-1)]; c = 1.0
-        _add_hess([(None, 1.0), (I(2*i+1+t), 1.0), (I(2*i-1+t), -1.0)],
+        _add_hess(u, [(None, 1.0), (I(2*i+1+t), 1.0), (I(2*i-1+t), -1.0)],
                  [(I(2*i+2+t), 1.0), (I(2*i+t), -1.0)],
-                 c, w)
+                 c, w, H)
 
     # 6) i=1..27
     for i in range(1, 28):
         t = 2 * ((i-1)//9)
         w = A[94 + (i-1)]; c = SQRT2
-        _add_hess([(None, 1.0), (I(2*i+21+t), 1.0), (I(2*i-1+t), -1.0)],
+        _add_hess(u, [(None, 1.0), (I(2*i+21+t), 1.0), (I(2*i-1+t), -1.0)],
                  [(None, 1.0), (I(2*i+22+t), 1.0), (I(2*i+t), -1.0)],
-                 c, w)
+                 c, w, H)
 
     # 7) i=1..27
     for i in range(1, 28):
         t = 2 * ((i-1)//9)
         w = A[121 + (i-1)]; c = SQRT2
-        _add_hess([(None, 1.0), (I(2*i+1+t), 1.0), (I(2*i+19+t), -1.0)],
+        _add_hess(u, [(None, 1.0), (I(2*i+1+t), 1.0), (I(2*i+19+t), -1.0)],
                  [(None, 1.0), (I(2*i+20+t), 1.0), (I(2*i+2+t), -1.0)],
-                 c, w)
+                 c, w, H)
 
     return H   
 
