@@ -112,7 +112,7 @@ def _add_obj(u: np.ndarray,
     Returns:
         None: Updates total 
     """
-    a_vec, b_vec, a, b, r = _term_values(u, coeffs_a, coeffs_b)
+    _, _, _, _, r = _term_values(u, coeffs_a, coeffs_b)
 
 
     # Adding component derivatives to total 
