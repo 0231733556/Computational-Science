@@ -78,18 +78,21 @@ def steepest_descent_conjugate(fun, grad, u, alpha_init=0.04, c=0.5, r=0.8, n=10
     g_new = 0
     h_new = 0
     count = 0
+    # continue only up until the function stops improving
     while m_new < m_old:
         m_old, g_old, h_old = m_new, g_new, h_new
         g_new = grad(u)
+        # resets steepest descent every steps to correct for conjugacy drift
         if count % n == 0:
             h_new = -g_new
         else:
+            # finds a conjugate direction
             h_new = -g_new + max(beta(g_old, g_new, h_old), 0) * h_old
         # Backtracking line search
         alpha = 1 / r * alpha_init
         m_x = 10e100
         u_x = u
-        # armijo condition aka sufficient descent
+        # while it doesn't obey armijo condition aka sufficient descent
         while m_x > m_new + c * alpha * np.dot(h_new, g_new):
             alpha = r * alpha
             u_x = u + alpha * h_new
