@@ -2,7 +2,6 @@ import numpy as np
 import functions as fn
 import logging as log
 import sympy as sp
-from inputs import u, g, A, expected_grad, a, b, x
 
 EPSILON = 1e-6
 
@@ -97,6 +96,8 @@ def steepest_descent_conjugate(fun, grad, u, alpha_init=0.04, c=0.5, r=0.8, n=10
             alpha = r * alpha
             u_x = u + alpha * h_new
             m_x = fun(u_x)
+        #if count % 1000 == 0:
+            #log.debug(f"Iteration {count} ; fun(u) : {fun(u)}; u: {u}")
         m_new = m_x
         u = u_x
         count += 1
