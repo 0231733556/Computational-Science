@@ -1,0 +1,15 @@
+1. The difference lies in the rang of values the variable can take,
+ namely that in discrete optimisation said variable is restricted to only integers withing a range
+ whereas in continous optimisation there are no restrictions within the range of possible variables allowing for non-integer solutions
+
+2.Internally sparse matrices are handled diffrent in computation, namely that the python compiler can optimize execution and avoid redundant zero computations
+this saves memory and compute time.
+
+3.metaheuristc functions like the evolutionary algorithms we have seen, treat the objective function as a black box, wasting information
+additionaly, because they are based on randomness they cannot guarantee convergence.
+
+4. The armijo tule ensures that any following step will only be accepted if it makes "sufficient" progress in the wished for direction.
+
+5.
+   2   2   2     2
+2⋅u₁ ⋅u₂ ⋅u₃ ⋅u₄⋅u₅ 
