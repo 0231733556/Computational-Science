@@ -160,7 +160,7 @@ def _approx_inv_hessian(L_old,diff_f,diff_u):
     L_new  = L_old + part_1 + part_2 # matrix
     return L_new
 
-def bfgs(fun, grad, u, alpha_init=0.04, c1=0.5, c2=0.5, r=0.8, tol=EPSILON):
+def bfgs(fun, grad, u, alpha_init=0.04, c1=0.3, c2=0.5, r=0.8, tol=EPSILON):
     """
     Minimizes a given function using the BFGS quasi-Newton method.
     

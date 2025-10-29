@@ -3,7 +3,7 @@ import functions as fn
 import logging as log
 import sympy as sp
 import inputs as inp
-from algorithms import steepest_descent, steepest_descent_backtracking, steepest_descent_conjugate, newtons_method, set_logging_level
+from algorithms import *
 
 def __main__():
     set_logging_level(log.DEBUG)
@@ -35,6 +35,9 @@ def __main__():
     u = np.zeros(80)
     newtons_method(f, grad, hess, u, tol=1e-6)
 
+    quasi_newton = bfgs(f, grad, inp.u)
+    
+
 
 def test_suite():
     grad = lambda u: fn.model4a_gradient(u, inp.A, inp.g)
@@ -42,5 +45,5 @@ def test_suite():
     assert np.allclose(should_be_zero, 0)
 
 if __name__ == "__main__":
-    test_suite()
+
     __main__()
