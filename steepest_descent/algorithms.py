@@ -147,9 +147,17 @@ def _approx_inv_hessian(L_old,diff_f,diff_u):
     Returns:
         np.ndarray: The updated inverse Hessian matrix.
     """
-    part_1=L_old + np.outer(np.inner(diff_u,diff_f)+np.dot(diff_f,np.dot(L_old,diff_f)) / (np.inner(diff_u,diff_f)**2),np.outer(diff_u,diff_u))
-    part_2= - (np.outer(np.dot(L_old,diff_f),diff_u)+np.outer(diff_u,np.dot(L_old,diff_f))) / np.inner(diff_u,diff_f)
-    L_new=part_1 + part_2
+    diff_u_dot_diff_f = np.inner(diff_u, diff_f) # scalar
+    L_dot_diff_f = np.dot(L_old, diff_f) # vector
+    
+    part1_scalar = (diff_u_dot_diff_f + np.dot(diff_f, L_dot_diff_f)) / (np.inner(diff_u, diff_f)**2) # scalar
+    part1_mat = np.outer(diff_u, diff_u) # matrix
+    part_1 = part1_scalar * part1_mat # matrix
+    
+    part2_mat1 = np.outer(L_dot_diff_f, diff_u) # matrix
+    part2_mat2 = np.dot(np.outer(diff_u, diff_f), L_old) # matrix
+    part_2 = - (part2_mat1 + part2_mat2) /  diff_u_dot_diff_f
+    L_new  = L_old + part_1 + part_2 # matrix
     return L_new
 
 def bfgs(fun, grad, u, alpha_init=0.04, c1=0.5, c2=0.5, r=0.8, tol=EPSILON):
@@ -160,6 +168,10 @@ def bfgs(fun, grad, u, alpha_init=0.04, c1=0.5, c2=0.5, r=0.8, tol=EPSILON):
         fun (callable): The objective function to minimize.
         grad (callable): Function to compute the gradient of the objective function.
         u (np.ndarray): Initial guess for the minimum.
+        alpha_init (float): Initial step size for the line search.
+        c1 (float): Parameter for the sufficient decrease condition (0 < c1 < 1).
+        c2 (float): Parameter for the curvature condition (0 < c2 < 1).
+        r (float): Step size reduction factor (0 < r < 1).
         tol (float): Tolerance for convergence.
     
     Returns:
