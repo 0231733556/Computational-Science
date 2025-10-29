@@ -240,7 +240,7 @@ def bfgs(fun, grad, u, alpha_init=0.04, c1=0.5, c2=0.5, r=0.8, tol=EPSILON):
             m_new = m2
         
         if count % 10 == 0:
-            log.debug(f"Iteration {count} ; fun(u) : {fun(u)}; u: {u}")
+            log.debug(f"Iteration {count} ; fun(u) : {m_old}; u: {u - diff_u}")
     
-    log.debug(f" {count} iterations; fun(u) : {fun(u)}; u: {u}")
+    log.debug(f" {count} iterations; fun(u) : {m_old}; u: {u - diff_u}")
     return m_old, u - diff_u
