@@ -134,3 +134,113 @@ def newtons_method(fun,grad,hess,u,tol):
             log.debug(f"Iteration {count} ; fun(u) : {fun(u)}; u: {u}")
     log.debug(f" {count} iterations; fun(u) : {fun(u)}; u: {u}")
     return u, fun(u)
+
+
+def _approx_inv_hessian(L_old,diff_f,diff_u):
+    """
+    Compute an approximate inverse Hessian matrix using the BFGS update formula.
+
+    Args:
+        L_old (np.ndarray): The old inverse Hessian matrix.
+        diff_f (np.ndarray): The difference in gradient vectors.
+        diff_u (np.ndarray): The difference in parameter vectors.
+    Returns:
+        np.ndarray: The updated inverse Hessian matrix.
+    """
+    part_1=L_old + np.outer(np.inner(diff_u,diff_f)+np.dot(diff_f,np.dot(L_old,diff_f)) / (np.inner(diff_u,diff_f)**2),np.outer(diff_u,diff_u))
+    part_2= - (np.outer(np.dot(L_old,diff_f),diff_u)+np.outer(diff_u,np.dot(L_old,diff_f))) / np.inner(diff_u,diff_f)
+    L_new=part_1 + part_2
+    return L_new
+
+def bfgs(fun, grad, u, alpha_init=0.04, c1=0.5, c2=0.5, r=0.8, tol=EPSILON):
+    """
+    Minimizes a given function using the BFGS quasi-Newton method.
+    
+    Args:
+        fun (callable): The objective function to minimize.
+        grad (callable): Function to compute the gradient of the objective function.
+        u (np.ndarray): Initial guess for the minimum.
+        tol (float): Tolerance for convergence.
+    
+    Returns:
+        u*,m(u*) (tuple): The minimum value of the objective function and the corresponding point.
+    """
+    assert 0 < c1 < 1 and 0 < c2 < 1 and c1 < c2
+    assert 0 < r < 1
+    n = len(u)
+    Hinv_new = np.eye(n)  # Initial Hessian approximation
+    m_new = fun(u)
+    g2 = grad(u)
+    m_old = 10e100
+    g_new = 0
+    count = 0
+    diff_u = 0
+    while m_new < m_old:
+        m_old, g_old, Hinv_old = m_new, g_new, Hinv_new 
+        g_new = g2
+        diff_g = g_new - g_old
+        # determine search direction
+        if count == 0:
+            h = -np.dot(Hinv_old, g_new)
+        else:
+            Hinv_new = _approx_inv_hessian(Hinv_old, diff_g, diff_u)
+            h = -np.dot(Hinv_new, g_new)
+        # Line search
+        # Determine initial search domain, but stop if acceptable stepsize is found
+        signal1 = 0
+        alpha3 = alpha_init
+        ux = u + alpha3 * h
+        m3 = fun(ux)
+        g3 = grad(ux)
+        if m3 <= m_new + c1 * alpha3 * np.dot(h, g_new) and np.dot(h, g3) >= c2 * np.dot(h, g_new):
+            signal1 = 1
+        while m3 < m_new + c1 * alpha3 * np.dot(h, g_new) and signal1 == 0:
+            alpha3 = alpha3 / r
+            ux = u + alpha3 * h
+            m3 = fun(ux)
+            g3 = grad(ux)
+            if m3 <= m_new + c1 * alpha3 * np.dot(h, g_new) and np.dot(h, g3) >= c2 * np.dot(h, g_new):
+                signal1 = 1
+        if signal1 == 0:
+            signal2 = 0
+            alpha1 = 0
+            alpha2 = alpha3 * 0.5
+        ux = u + alpha2 * h
+        m2 = fun(ux)
+        g2 = grad(ux)
+        while signal2 == 0:
+            if alpha3 - alpha1 < tol:
+                signal2 = 1
+                m2 = m_new
+                g2 = g_new
+            elif m2 > m_new + c1 * alpha2 * np.dot(h, g_new):
+                alpha3 = alpha2
+                m3 = m2
+                g3 = g2
+                alpha2 = 0.5 * (alpha1 + alpha2)
+                ux = u + alpha2 * h
+                m2 = fun(ux)
+                g2 = grad(ux)
+            elif np.dot(h, g2) < c2 * np.dot(h, g_new):
+                alpha1 = alpha2
+                alpha2 = 0.5 * (alpha2 + alpha3)
+                ux = u + alpha2 * h
+                m2 = fun(ux)
+                g2 = grad(ux)
+            else:
+                signal2 = 1
+            
+        diff_u = ux - u
+        u = ux
+        count += 1
+        if signal1 == 1:
+            m_new = m3
+            g2 = g3
+        else:
+            m_new = m2
+        
+        if count % 10 == 0:
+            log.debug(f"Iteration {count} ; fun(u) : {fun(u)}; u: {u}")
+    
+    log.debug(f" {count} iterations; fun(u) : {fun(u)}; u: {u}")
+    return m_old, u - diff_u
