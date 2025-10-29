@@ -213,34 +213,35 @@ def bfgs(fun, grad, u, alpha_init=0.04, c1=0.3, c2=0.5, r=0.8, tol=EPSILON):
             g3 = grad(ux)
             if m3 <= m_new + c1 * alpha3 * np.dot(h, g_new) and np.dot(h, g3) >= c2 * np.dot(h, g_new):
                 signal1 = 1
+        # Apply bisection method if no acceptable stepsize is found yet
         if signal1 == 0:
             signal2 = 0
             alpha1 = 0
             alpha2 = alpha3 * 0.5
-        ux = u + alpha2 * h
-        m2 = fun(ux)
-        g2 = grad(ux)
-        while signal2 == 0:
-            if alpha3 - alpha1 < tol:
-                signal2 = 1
-                m2 = m_new
-                g2 = g_new
-            elif m2 > m_new + c1 * alpha2 * np.dot(h, g_new):
-                alpha3 = alpha2
-                m3 = m2
-                g3 = g2
-                alpha2 = 0.5 * (alpha1 + alpha2)
-                ux = u + alpha2 * h
-                m2 = fun(ux)
-                g2 = grad(ux)
-            elif np.dot(h, g2) < c2 * np.dot(h, g_new):
-                alpha1 = alpha2
-                alpha2 = 0.5 * (alpha2 + alpha3)
-                ux = u + alpha2 * h
-                m2 = fun(ux)
-                g2 = grad(ux)
-            else:
-                signal2 = 1
+            ux = u + alpha2 * h
+            m2 = fun(ux)
+            g2 = grad(ux)
+            while signal2 == 0:
+                if alpha3 - alpha1 < tol:
+                    signal2 = 1
+                    m2 = m_new
+                    g2 = g_new
+                elif m2 > m_new + c1 * alpha2 * np.dot(h, g_new):
+                    alpha3 = alpha2
+                    m3 = m2
+                    g3 = g2
+                    alpha2 = 0.5 * (alpha1 + alpha2)
+                    ux = u + alpha2 * h
+                    m2 = fun(ux)
+                    g2 = grad(ux)
+                elif np.dot(h, g2) < c2 * np.dot(h, g_new):
+                    alpha1 = alpha2
+                    alpha2 = 0.5 * (alpha2 + alpha3)
+                    ux = u + alpha2 * h
+                    m2 = fun(ux)
+                    g2 = grad(ux)
+                else:
+                    signal2 = 1
             
         diff_u = ux - u
         u = ux
