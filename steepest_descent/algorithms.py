@@ -1,5 +1,6 @@
 import numpy as np
 import functions as fn
+from functions import I
 import logging as log
 
 EPSILON = 1e-6
@@ -267,7 +268,7 @@ def bfgs(fun, grad, u, alpha_init=1, c1=1e-4, c2=0.9, r=0.5, tol=1e-15):
     return m_old, u - diff_u
 
 
-def l_bfgs(fun, grad, u, alpha_init=1, c1=1e-4, c2=0.9, r=0.5, tol=1e-15):
+def l_bfgs(fun, grad, u, n_li=3, alpha_init=1, c1=1e-4, c2=0.9, r=0.5, tol=1e-15):
     """
     Minimizes a given function using the L-BFGS quasi-Newton method.
     
@@ -275,6 +276,7 @@ def l_bfgs(fun, grad, u, alpha_init=1, c1=1e-4, c2=0.9, r=0.5, tol=1e-15):
         fun (callable): The objective function to minimize.
         grad (callable): Function to compute the gradient of the objective function.
         u (np.ndarray): Initial guess for the minimum.
+        n_li (int): Number of limited memory iterations.
         alpha_init (float): Initial step size for the line search.
         c1 (float): Parameter for the sufficient decrease condition (0 < c1 < 1).
         c2 (float): Parameter for the curvature condition (0 < c2 < 1).
@@ -289,23 +291,43 @@ def l_bfgs(fun, grad, u, alpha_init=1, c1=1e-4, c2=0.9, r=0.5, tol=1e-15):
     
     u = np.asarray(u, float)
     n = u.shape[0]
-    Hinv_new = np.eye(n)  # Initial Hessian approximation
-    m_new = fun(u)
-    g2 = grad(u)
+    L0= np.eye(n)  # Initial Hessian approximation
     m_old = 10e100
     g_new = 0
     count = 0
-    diff_u = 0
+    rho = np.zeros((n_li,1))
+    delta_U=np.zeros((n,n_li))
+    delta_F=delta_U
     while m_new < m_old:
-        m_old, g_old, Hinv_old = m_new, g_new, Hinv_new 
+        m_old = m_new
         g_new = g2
-        diff_g = g_new - g_old
+        count += 1
+
         # determine search direction
-        if count == 0:
-            h = -np.dot(Hinv_old, g_new)
+        if count == 1:
+            h = -np.dot(L0, g_new)
         else:
-            Hinv_new = _approx_inv_hessian(Hinv_old, diff_g, diff_u)
-            h = -np.dot(Hinv_new, g_new)
+            gamma =np.zeros((n_li,1))
+            h=g_new
+            for j in range(n_li,max(1,n_li-count+2),-1):
+                rho_j = rho[I(j)]
+                delta_u = delta_U[:,I(j)]
+                delta_f = delta_F[:,I(j)]
+                gamma_j = rho_j * np.inner(delta_u,h)
+                h = h-gamma_j*delta_f
+                gamma[I(j)] = gamma_j
+            
+            h = L0*h
+            
+            for j in range(max(1, n_li-count+2),n_li):
+                rho_j = rho[I(j)]
+                delta_u = delta_U[:,I(j)]
+                delta_f = delta_F[:,I(j)]
+                gamma_j = gamma[I(j)]
+                ata = rho_j * np.inner(delta_f,h)
+                h = h + (gamma_j - ata) * delta_u
+            
+            h=-h
         # Line search
         signal1, ux, m2, m3, g2, g3  = bfgs_line_search(u, fun, grad, h, alpha_init, c1, c2, r, tol, m_new, g_new)
             
