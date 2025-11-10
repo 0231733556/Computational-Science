@@ -1,14 +1,19 @@
 import numpy as np
-   
-# parameters for rosenbrock
-a = 1.0
-b = 10.0
 
-# input for rosenbrock
-x = np.array([-0.75, 0.7])
+rosenbrock_inputs={
+    "a": 1.0,
+    "b": 10.0,
+    "x": np.array([-0.75, 0.7]),    
+}
 
-# input for model4a 
-u = np.array([
+# params for model4a
+_g = np.zeros(80)
+_g[61] = 1.0
+_g[78] = 1.0
+
+model4a_inputs={
+    # input for model4a
+    "u": np.array([
     0.8147,
     0.9058,
     0.1270,
@@ -88,17 +93,10 @@ u = np.array([
     0.1966,
     0.2511,
     0.6160,
-    0.4733])
-
-# params for model4a
-g = np.zeros(80)
-g[61] = 1.0
-g[78] = 1.0
-# input for model4a
-A = np.ones(148)
-
-# expected gradient for model4a
-expected_grad = np.array([
+    0.4733]),
+    "A": np.ones(148),
+    "g": _g,
+    "expected_grad": np.array([
     0.8276,
     3.9456,
     -4.9622,
@@ -179,4 +177,4 @@ expected_grad = np.array([
     0.9078,
     -0.2301,
     0.4531])
-
+}
