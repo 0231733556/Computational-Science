@@ -160,7 +160,10 @@ def _approx_inv_hessian(L_old,diff_f,diff_u):
 
 def bfgs_line_search(u, fun, grad, h, alpha_init, c1, c2, r, tol, m_new, g_new):
     # Determine initial search domain, but stop if acceptable stepsize is found
-    signal1 = 0
+    
+    # Initializing return values to avoid errors
+    signal1, ux, m2, m3, g2, g3 = 0, None, None, None, None, None
+    
     alpha3 = alpha_init
     ux = u + alpha3 * h
     m3 = fun(ux)
