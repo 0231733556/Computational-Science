@@ -1,6 +1,8 @@
 import numpy as np
 import logging as log
 
+def I(k): return k-1
+
 def set_logging_level(level):
     log.basicConfig(level=level)
 
@@ -189,9 +191,6 @@ def model4a_objective(u, A, g):
     A = np.asarray(A, float)
     g = np.asarray(g, float)
 
-    def I(k):  # 1-based MATLAB index -> 0-based Python
-        return k-1
-
     m = np.array(-np.dot(g, u), dtype=float)
 
     # 1) i=1..10: a = u_{2i-1}, b = 1 + u_{2i}, c = 1
@@ -272,9 +271,6 @@ def model4a_gradient(u, A, g) -> np.ndarray:
     grad = -g.copy()
     
 
-    # Helper to convert 1-based MATLAB k -> 0-based index
-    def I(k): return k-1
-
     #pass (None,CONSTANT) to indicate constant term
     #pass (INDEX,COEFFICIENT) to indicate variable term, use sign of coefficient for +/- in term
     #pass terms sequewntially to build a and b, first a then b in expressiion sqrt(a^2 + b^2) using [] of tuples
@@ -347,8 +343,6 @@ def model4a_hessian(u, A, g, eps=1e-12) -> np.ndarray:
     u = np.asarray(u, float)
     A = np.asarray(A, float)
     H = np.zeros((u.size, u.size), dtype=float)
-
-    def I(k): return k-1
 
     # block 1
     # 1) i=1..10
