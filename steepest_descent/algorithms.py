@@ -267,3 +267,61 @@ def bfgs(fun, grad, u, alpha_init=1, c1=1e-4, c2=0.9, r=0.5, tol=1e-15):
     return m_old, u - diff_u
 
 
+def l_bfgs(fun, grad, u, alpha_init=1, c1=1e-4, c2=0.9, r=0.5, tol=1e-15):
+    """
+    Minimizes a given function using the L-BFGS quasi-Newton method.
+    
+    Args:
+        fun (callable): The objective function to minimize.
+        grad (callable): Function to compute the gradient of the objective function.
+        u (np.ndarray): Initial guess for the minimum.
+        alpha_init (float): Initial step size for the line search.
+        c1 (float): Parameter for the sufficient decrease condition (0 < c1 < 1).
+        c2 (float): Parameter for the curvature condition (0 < c2 < 1).
+        r (float): Step size reduction factor (0 < r < 1).
+        tol (float): Tolerance for convergence.
+    
+    Returns:
+        u*,m(u*) (tuple): The minimum value of the objective function and the corresponding point.
+    """
+    assert 0 < c1 < 1 and 0 < c2 < 1 and c1 < c2
+    assert 0 < r < 1
+    
+    u = np.asarray(u, float)
+    n = u.shape[0]
+    Hinv_new = np.eye(n)  # Initial Hessian approximation
+    m_new = fun(u)
+    g2 = grad(u)
+    m_old = 10e100
+    g_new = 0
+    count = 0
+    diff_u = 0
+    while m_new < m_old:
+        m_old, g_old, Hinv_old = m_new, g_new, Hinv_new 
+        g_new = g2
+        diff_g = g_new - g_old
+        # determine search direction
+        if count == 0:
+            h = -np.dot(Hinv_old, g_new)
+        else:
+            Hinv_new = _approx_inv_hessian(Hinv_old, diff_g, diff_u)
+            h = -np.dot(Hinv_new, g_new)
+        # Line search
+        signal1, ux, m2, m3, g2, g3  = bfgs_line_search(u, fun, grad, h, alpha_init, c1, c2, r, tol, m_new, g_new)
+            
+        diff_u = ux - u
+        u = ux
+        count += 1
+        if signal1 == 1:
+            m_new = m3
+            g2 = g3
+        else:
+            m_new = m2
+        
+        if count % 100 == 0:
+            log.debug(f"Iteration {count} ; fun(u) : {m_old}; u: {u - diff_u}")
+    
+    log.debug(f" {count} iterations; fun(u) : {m_old}; u: {u - diff_u}")
+    return m_old, u - diff_u
+
+
