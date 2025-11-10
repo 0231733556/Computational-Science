@@ -160,7 +160,7 @@ def _approx_inv_hessian(L_old,diff_f,diff_u):
     L_new  = L_old + part_1 + part_2 # matrix
     return L_new
 
-def bfgs(fun, grad, u, alpha_init=0.04, c1=0.3, c2=0.5, r=0.8, tol=EPSILON):
+def bfgs(fun, grad, u, alpha_init=1, c1=1e-4, c2=0.9, r=0.5, tol=1e-15):
     """
     Minimizes a given function using the BFGS quasi-Newton method.
     
@@ -179,7 +179,9 @@ def bfgs(fun, grad, u, alpha_init=0.04, c1=0.3, c2=0.5, r=0.8, tol=EPSILON):
     """
     assert 0 < c1 < 1 and 0 < c2 < 1 and c1 < c2
     assert 0 < r < 1
-    n = len(u)
+    
+    u = np.asarray(u, float)
+    n = u.shape[0]
     Hinv_new = np.eye(n)  # Initial Hessian approximation
     m_new = fun(u)
     g2 = grad(u)
@@ -252,7 +254,7 @@ def bfgs(fun, grad, u, alpha_init=0.04, c1=0.3, c2=0.5, r=0.8, tol=EPSILON):
         else:
             m_new = m2
         
-        if count % 10 == 0:
+        if count % 100 == 0:
             log.debug(f"Iteration {count} ; fun(u) : {m_old}; u: {u - diff_u}")
     
     log.debug(f" {count} iterations; fun(u) : {m_old}; u: {u - diff_u}")

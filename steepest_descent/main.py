@@ -35,9 +35,22 @@ def __main__():
     u = np.zeros(80)
     newtons_method(f, grad, hess, u, tol=1e-6)
 
-    quasi_newton = bfgs(f, grad, inp.u)
+    bfgs(f, grad, inp.u)
     
-
+def bfgs_tests():
+    set_logging_level(log.DEBUG)
+    
+    
+    f = lambda x: fn.rosenbrock(x, inp.a, inp.b)
+    grad = lambda x: fn.rosenbrock_grad(x, inp.a, inp.b)
+    hess = lambda x: fn.rosenbrock_hess(x, inp.a, inp.b)
+    bfgs(f, grad, inp.x)
+    
+    f = lambda u: fn.model4a_objective(u, inp.A, inp.g)
+    grad = lambda u: fn.model4a_gradient(u, inp.A, inp.g)
+    hess = lambda u: fn.model4a_hessian(u, inp.A, inp.g)
+    u_zero = np.zeros(80)
+    bfgs(f, grad, u_zero)
 
 def test_suite():
     grad = lambda u: fn.model4a_gradient(u, inp.A, inp.g)
@@ -45,5 +58,5 @@ def test_suite():
     assert np.allclose(should_be_zero, 0)
 
 if __name__ == "__main__":
-
-    __main__()
+    bfgs_tests()
+    #__main__()
