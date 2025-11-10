@@ -1,8 +1,6 @@
 import numpy as np
 import functions as fn
 import logging as log
-import sympy as sp
-from inputs import u, g, A, expected_grad, a, b, x
 
 EPSILON = 1e-6
 
@@ -160,6 +158,54 @@ def _approx_inv_hessian(L_old,diff_f,diff_u):
     L_new  = L_old + part_1 + part_2 # matrix
     return L_new
 
+def bfgs_line_search(u, fun, grad, h, alpha_init, c1, c2, r, tol, m_new, g_new):
+    # Determine initial search domain, but stop if acceptable stepsize is found
+    signal1 = 0
+    alpha3 = alpha_init
+    ux = u + alpha3 * h
+    m3 = fun(ux)
+    g3 = grad(ux)
+    if m3 <= m_new + c1 * alpha3 * np.dot(h, g_new) and np.dot(h, g3) >= c2 * np.dot(h, g_new):
+        signal1 = 1
+    while m3 < m_new + c1 * alpha3 * np.dot(h, g_new) and signal1 == 0:
+        alpha3 = alpha3 / r
+        ux = u + alpha3 * h
+        m3 = fun(ux)
+        g3 = grad(ux)
+        if m3 <= m_new + c1 * alpha3 * np.dot(h, g_new) and np.dot(h, g3) >= c2 * np.dot(h, g_new):
+            signal1 = 1
+    # Apply bisection method if no acceptable stepsize is found yet
+    if signal1 == 0:
+        signal2 = 0
+        alpha1 = 0
+        alpha2 = alpha3 * 0.5
+        ux = u + alpha2 * h
+        m2 = fun(ux)
+        g2 = grad(ux)
+        while signal2 == 0:
+            if alpha3 - alpha1 < tol:
+                signal2 = 1
+                m2 = m_new
+                g2 = g_new
+            elif m2 > m_new + c1 * alpha2 * np.dot(h, g_new):
+                alpha3 = alpha2
+                m3 = m2
+                g3 = g2
+                alpha2 = 0.5 * (alpha1 + alpha2)
+                ux = u + alpha2 * h
+                m2 = fun(ux)
+                g2 = grad(ux)
+            elif np.dot(h, g2) < c2 * np.dot(h, g_new):
+                alpha1 = alpha2
+                alpha2 = 0.5 * (alpha2 + alpha3)
+                ux = u + alpha2 * h
+                m2 = fun(ux)
+                g2 = grad(ux)
+            else:
+                signal2 = 1
+    return signal1, ux, m2, m3, g2, g3
+
+
 def bfgs(fun, grad, u, alpha_init=1, c1=1e-4, c2=0.9, r=0.5, tol=1e-15):
     """
     Minimizes a given function using the BFGS quasi-Newton method.
@@ -200,50 +246,7 @@ def bfgs(fun, grad, u, alpha_init=1, c1=1e-4, c2=0.9, r=0.5, tol=1e-15):
             Hinv_new = _approx_inv_hessian(Hinv_old, diff_g, diff_u)
             h = -np.dot(Hinv_new, g_new)
         # Line search
-        # Determine initial search domain, but stop if acceptable stepsize is found
-        signal1 = 0
-        alpha3 = alpha_init
-        ux = u + alpha3 * h
-        m3 = fun(ux)
-        g3 = grad(ux)
-        if m3 <= m_new + c1 * alpha3 * np.dot(h, g_new) and np.dot(h, g3) >= c2 * np.dot(h, g_new):
-            signal1 = 1
-        while m3 < m_new + c1 * alpha3 * np.dot(h, g_new) and signal1 == 0:
-            alpha3 = alpha3 / r
-            ux = u + alpha3 * h
-            m3 = fun(ux)
-            g3 = grad(ux)
-            if m3 <= m_new + c1 * alpha3 * np.dot(h, g_new) and np.dot(h, g3) >= c2 * np.dot(h, g_new):
-                signal1 = 1
-        # Apply bisection method if no acceptable stepsize is found yet
-        if signal1 == 0:
-            signal2 = 0
-            alpha1 = 0
-            alpha2 = alpha3 * 0.5
-            ux = u + alpha2 * h
-            m2 = fun(ux)
-            g2 = grad(ux)
-            while signal2 == 0:
-                if alpha3 - alpha1 < tol:
-                    signal2 = 1
-                    m2 = m_new
-                    g2 = g_new
-                elif m2 > m_new + c1 * alpha2 * np.dot(h, g_new):
-                    alpha3 = alpha2
-                    m3 = m2
-                    g3 = g2
-                    alpha2 = 0.5 * (alpha1 + alpha2)
-                    ux = u + alpha2 * h
-                    m2 = fun(ux)
-                    g2 = grad(ux)
-                elif np.dot(h, g2) < c2 * np.dot(h, g_new):
-                    alpha1 = alpha2
-                    alpha2 = 0.5 * (alpha2 + alpha3)
-                    ux = u + alpha2 * h
-                    m2 = fun(ux)
-                    g2 = grad(ux)
-                else:
-                    signal2 = 1
+        signal1, ux, m2, m3, g2, g3  = bfgs_line_search(u, fun, grad, h, alpha_init, c1, c2, r, tol, m_new, g_new)
             
         diff_u = ux - u
         u = ux
@@ -259,3 +262,5 @@ def bfgs(fun, grad, u, alpha_init=1, c1=1e-4, c2=0.9, r=0.5, tol=1e-15):
     
     log.debug(f" {count} iterations; fun(u) : {m_old}; u: {u - diff_u}")
     return m_old, u - diff_u
+
+
