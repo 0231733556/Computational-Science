@@ -327,8 +327,8 @@ def l_bfgs(fun, grad, u, n_li=3, alpha_init=1, c1=1e-4, c2=0.9, r=0.5, tol=1e-15
                 delta_u = delta_U[:,I(j)]
                 delta_g = delta_G[:,I(j)]
                 gamma_j = gamma[I(j)]
-                ata = rho_j * np.inner(delta_g, h)
-                h = h + (gamma_j - ata) * delta_u
+                eta = rho_j * np.inner(delta_g, h)
+                h = h + (gamma_j - eta) * delta_u
                 
             
             h = -h
