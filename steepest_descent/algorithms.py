@@ -300,7 +300,7 @@ def l_bfgs(fun, grad, u, n_li=3, alpha_init=1, c1=1e-4, c2=0.9, r=0.5, tol=1e-15
     count = 0
     rho = np.zeros((n_li, 1))
     delta_U = np.zeros((n, n_li))
-    delta_G = delta_U
+    delta_G = np.zeros((n, n_li))
     while m_new < m_old:
         m_old = m_new
         g_new = g2
