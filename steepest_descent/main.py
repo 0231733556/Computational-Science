@@ -69,7 +69,7 @@ def l_bfgs_tests():
     grad = lambda u: fn.model4a_gradient(u, m4a["A"], m4a["g"])
     hess = lambda u: fn.model4a_hessian(u, m4a["A"], m4a["g"])
     u_zero = np.zeros(80)
-    l_bfgs(f, grad, u_zero)
+    l_bfgs(f, grad, u_zero, n_li=10)
 
 if __name__ == "__main__":
     l_bfgs_tests()

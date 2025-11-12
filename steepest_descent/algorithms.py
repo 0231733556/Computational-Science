@@ -169,14 +169,15 @@ def bfgs_line_search(u, fun, grad, h, alpha_init, c1, c2, r, tol, m_new, g_new):
     ux = u + alpha3 * h
     m3 = fun(ux)
     g3 = grad(ux)
-    if m3 <= m_new + c1 * alpha3 * np.dot(h, g_new) and np.dot(h, g3) >= c2 * np.dot(h, g_new):
+    
+    if m3 <= m_new + c1 * alpha3 * np.dot(h, g_new).astype(float) and np.dot(h, g3).astype(float) >= c2 * np.dot(h, g_new).astype(float):
         signal1 = 1
-    while m3 < m_new + c1 * alpha3 * np.dot(h, g_new) and signal1 == 0:
+    while m3 < m_new + c1 * alpha3 * np.dot(h, g_new).astype(float) and signal1 == 0:
         alpha3 = alpha3 / r
         ux = u + alpha3 * h
         m3 = fun(ux)
         g3 = grad(ux)
-        if m3 <= m_new + c1 * alpha3 * np.dot(h, g_new) and np.dot(h, g3) >= c2 * np.dot(h, g_new):
+        if m3 <= m_new + c1 * alpha3 * np.dot(h, g_new).astype(float) and np.dot(h, g3).astype(float) >= c2 * np.dot(h, g_new).astype(float):
             signal1 = 1
     # Apply bisection method if no acceptable stepsize is found yet
     if signal1 == 0:
@@ -191,7 +192,7 @@ def bfgs_line_search(u, fun, grad, h, alpha_init, c1, c2, r, tol, m_new, g_new):
                 signal2 = 1
                 m2 = m_new
                 g2 = g_new
-            elif m2 > m_new + c1 * alpha2 * np.dot(h, g_new):
+            elif m2 > m_new + c1 * alpha2 * np.dot(h, g_new).astype(float):
                 alpha3 = alpha2
                 m3 = m2
                 g3 = g2
@@ -199,7 +200,7 @@ def bfgs_line_search(u, fun, grad, h, alpha_init, c1, c2, r, tol, m_new, g_new):
                 ux = u + alpha2 * h
                 m2 = fun(ux)
                 g2 = grad(ux)
-            elif np.dot(h, g2) < c2 * np.dot(h, g_new):
+            elif np.dot(h, g2).astype(float) < c2 * np.dot(h, g_new).astype(float):
                 alpha1 = alpha2
                 alpha2 = 0.5 * (alpha2 + alpha3)
                 ux = u + alpha2 * h
@@ -297,9 +298,9 @@ def l_bfgs(fun, grad, u, n_li=3, alpha_init=1, c1=1e-4, c2=0.9, r=0.5, tol=1e-15
     m_old = 10e100
     g_new = 0
     count = 0
-    rho = np.zeros((n_li,1))
-    delta_U=np.zeros((n,n_li))
-    delta_F=delta_U
+    rho = np.zeros((n_li, 1))
+    delta_U = np.zeros((n, n_li))
+    delta_G = delta_U
     while m_new < m_old:
         m_old = m_new
         g_new = g2
@@ -309,43 +310,54 @@ def l_bfgs(fun, grad, u, n_li=3, alpha_init=1, c1=1e-4, c2=0.9, r=0.5, tol=1e-15
         if count == 1:
             h = -np.dot(L0, g_new)
         else:
-            gamma =np.zeros((n_li,1))
-            h=g_new
-            for j in range(n_li,max(1,n_li-count+2),-1):
+            gamma = np.zeros((n_li, 1))
+            h = g_new
+            for j in range(n_li, max(1, n_li-count + 2), -1):
                 rho_j = rho[I(j)]
                 delta_u = delta_U[:,I(j)]
-                delta_f = delta_F[:,I(j)]
-                gamma_j = rho_j * np.inner(delta_u,h)
-                h = h-gamma_j*delta_f
+                delta_g = delta_G[:,I(j)]
+                gamma_j = rho_j * np.inner(delta_u, h)
+                h = h - gamma_j * delta_g
                 gamma[I(j)] = gamma_j
+
+            h = np.dot(L0, h)
             
-            h = L0*h
-            
-            for j in range(max(1, n_li-count+2),n_li):
+            for j in range(max(1, n_li - count + 2), n_li):
                 rho_j = rho[I(j)]
                 delta_u = delta_U[:,I(j)]
-                delta_f = delta_F[:,I(j)]
+                delta_g = delta_G[:,I(j)]
                 gamma_j = gamma[I(j)]
-                ata = rho_j * np.inner(delta_f,h)
+                ata = rho_j * np.inner(delta_g, h)
                 h = h + (gamma_j - ata) * delta_u
+                
             
-            h=-h
+            h = -h
+            
         # Line search
         signal1, ux, m2, m3, g2, g3  = bfgs_line_search(u, fun, grad, h, alpha_init, c1, c2, r, tol, m_new, g_new)
             
-        diff_u = ux - u
+        delta_u = ux - u
         u = ux
-        count += 1
         if signal1 == 1:
             m_new = m3
             g2 = g3
         else:
             m_new = m2
         
+        delta_g = g2 - g_new
+        delta_U[:, I(1) : I(n_li - 1)] = delta_U[:, I(2) : I(n_li)]
+        delta_U[:,I(n_li)] = delta_u
+        
+        delta_G[:, I(1) : I(n_li - 1)] = delta_G[:, I(2) : I(n_li)]
+        delta_G[:,I(n_li)] = delta_g
+        
+        rho[I(1) : I(n_li - 1)] = rho[I(2) : I(n_li)]
+        rho[I(n_li)] = 1.0 / np.inner(delta_g, delta_u)
+        
         if count % 100 == 0:
-            log.debug(f"Iteration {count} ; fun(u) : {m_old}; u: {u - diff_u}")
+            log.debug(f"Iteration {count} ; fun(u) : {m_old}; u: {u - delta_u}")
     
-    log.debug(f" {count} iterations; fun(u) : {m_old}; u: {u - diff_u}")
-    return m_old, u - diff_u
+    log.debug(f" {count} iterations; fun(u) : {m_old}; u: {u - delta_u}")
+    return m_old, u - delta_u
 
 

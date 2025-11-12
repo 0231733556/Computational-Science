@@ -11,7 +11,7 @@ SQRT2 = np.sqrt(2.0)
 def rosenbrock(x, a, b):
     temp = (x[0] - a)**2 + b*(x[1]-x[0]**2)**2
       
-    return temp
+    return temp.astype(float)
 
 def rosenbrock_grad(x, a, b):
     x1, x2 = x
@@ -250,7 +250,8 @@ def model4a_objective(u, A, g):
                  [(None, 1.0), (I(2*i+20+t), 1.0), (I(2*i+2+t), -1.0)],
                  c=SQRT2, w=A[121 + (i-1)], m=m)
 
-    return m
+    
+    return m.astype(float)
 
 
 def model4a_gradient(u, A, g) -> np.ndarray:
