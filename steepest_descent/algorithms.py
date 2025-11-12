@@ -292,6 +292,8 @@ def l_bfgs(fun, grad, u, n_li=3, alpha_init=1, c1=1e-4, c2=0.9, r=0.5, tol=1e-15
     u = np.asarray(u, float)
     n = u.shape[0]
     L0= np.eye(n)  # Initial Hessian approximation
+    m_new = fun(u)
+    g2 = grad(u)
     m_old = 10e100
     g_new = 0
     count = 0
