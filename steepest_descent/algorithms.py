@@ -1,7 +1,9 @@
 import numpy as np
+from numpy import float64
 import functions as fn
 from functions import I
 import logging as log
+
 
 EPSILON = 1e-6
 
@@ -170,14 +172,14 @@ def bfgs_line_search(u, fun, grad, h, alpha_init, c1, c2, r, tol, m_new, g_new):
     m3 = fun(ux)
     g3 = grad(ux)
     
-    if m3 <= m_new + c1 * alpha3 * np.dot(h, g_new).astype(float) and np.dot(h, g3).astype(float) >= c2 * np.dot(h, g_new).astype(float):
+    if m3 <= m_new + c1 * alpha3 * np.dot(h, g_new).astype(float64) and np.dot(h, g3).astype(float64) >= c2 * np.dot(h, g_new).astype(float64):
         signal1 = 1
-    while m3 < m_new + c1 * alpha3 * np.dot(h, g_new).astype(float) and signal1 == 0:
+    while m3 < m_new + c1 * alpha3 * np.dot(h, g_new).astype(float64) and signal1 == 0:
         alpha3 = alpha3 / r
         ux = u + alpha3 * h
         m3 = fun(ux)
         g3 = grad(ux)
-        if m3 <= m_new + c1 * alpha3 * np.dot(h, g_new).astype(float) and np.dot(h, g3).astype(float) >= c2 * np.dot(h, g_new).astype(float):
+        if m3 <= m_new + c1 * alpha3 * np.dot(h, g_new).astype(float64) and np.dot(h, g3).astype(float64) >= c2 * np.dot(h, g_new).astype(float64):
             signal1 = 1
     # Apply bisection method if no acceptable stepsize is found yet
     if signal1 == 0:
@@ -192,21 +194,29 @@ def bfgs_line_search(u, fun, grad, h, alpha_init, c1, c2, r, tol, m_new, g_new):
                 signal2 = 1
                 m2 = m_new
                 g2 = g_new
-            elif m2 > m_new + c1 * alpha2 * np.dot(h, g_new).astype(float):
+            elif m2 > m_new + c1 * alpha2 * np.dot(h, g_new).astype(float64):
+                #print("================= HELL 2 =================")
                 alpha3 = alpha2
+                #print("m2", m2)
+                #print("g2", g2)
+                #print("alpha3", alpha3)
                 m3 = m2
                 g3 = g2
                 alpha2 = 0.5 * (alpha1 + alpha2)
                 ux = u + alpha2 * h
+                #print("alpha2", alpha2)
                 m2 = fun(ux)
                 g2 = grad(ux)
-            elif np.dot(h, g2).astype(float) < c2 * np.dot(h, g_new).astype(float):
+                #print("m2_new", m2)
+                #print("g2_new", g2)
+            elif np.dot(h, g2).astype(float64) < c2 * np.dot(h, g_new).astype(float64):
                 alpha1 = alpha2
                 alpha2 = 0.5 * (alpha2 + alpha3)
                 ux = u + alpha2 * h
                 m2 = fun(ux)
                 g2 = grad(ux)
             else:
+                #print("================= AHHHHH =================")
                 signal2 = 1
     return signal1, ux, m2, m3, g2, g3
 
@@ -312,7 +322,8 @@ def l_bfgs(fun, grad, u, n_li=3, alpha_init=1, c1=1e-4, c2=0.9, r=0.5, tol=1e-15
         else:
             gamma = np.zeros((n_li, 1))
             h = g_new.copy()
-            for j in range(n_li, max(1, n_li-count + 2)+1, -1):
+            for j in range(n_li, max(1, n_li-count + 2)-1, -1):
+                #print("first", count, I(j))
                 rho_j = rho[I(j)]
                 delta_u = delta_U[:,I(j)]
                 delta_g = delta_G[:,I(j)]
@@ -322,7 +333,8 @@ def l_bfgs(fun, grad, u, n_li=3, alpha_init=1, c1=1e-4, c2=0.9, r=0.5, tol=1e-15
 
             h = np.dot(L0, h)
             
-            for j in range(max(1, n_li - count + 2)+1, n_li):
+            for j in range(max(1, n_li - count + 2), n_li+1):
+                #print("second", count, I(j))
                 rho_j = rho[I(j)]
                 delta_u = delta_U[:,I(j)]
                 delta_g = delta_G[:,I(j)]
@@ -352,12 +364,37 @@ def l_bfgs(fun, grad, u, n_li=3, alpha_init=1, c1=1e-4, c2=0.9, r=0.5, tol=1e-15
         delta_G[:, -1] = delta_g
         
         rho[:-1] = rho[1:]
+        if not np.any(delta_g) or not np.any(delta_u):
+            break
         rho[-1] = 1.0 / np.inner(delta_g, delta_u)
         
         if count % 100 == 0:
             log.debug(f"Iteration {count} ; fun(u) : {m_old}; u: {u - delta_u}")
-    
+
+        #print("h", h)
+        
     log.debug(f" {count} iterations; fun(u) : {m_old}; u: {u - delta_u}")
     return m_old, u - delta_u
 
+
+'''
+delta_g [-3.49044085 -2.31231689]
+delta_g [ 3.37492033 -1.32966174]
+delta_g [-1.3221181   0.97476853]
+delta_g [-0.82195735  0.64606199]
+delta_g [ 3.83309377 -1.86344397]
+delta_g [-2.21970073  1.03366965]
+delta_g [-0.40339838  0.33683293]
+delta_g [ 0.15131978 -0.10958363]
+delta_g [ 0.42463205 -0.20104001]
+delta_g [-0.21776389  0.10078179]
+
+delta_g [-0.02589168  0.02203735]
+delta_g [ 0.02741881 -0.01948989]
+delta_g [ 0.10520972 -0.04970681]
+delta_g [-0.03441466  0.01586987]
+delta_g [-0.00684434  0.00593604]
+delta_g [ 0.00142255 -0.00101152]
+delta_g [-0.00059994  0.00028326]
+delta_g [0. 0.]'''
 
