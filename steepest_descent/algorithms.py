@@ -298,12 +298,12 @@ def l_bfgs(fun, grad, u, n_li=3, alpha_init=1, c1=1e-4, c2=0.9, r=0.5, tol=1e-15
     m_old = 10e100
     g_new = 0
     count = 0
-    rho = np.zeros((n_li, 1))
+    rho = np.zeros(n_li)
     delta_U = np.zeros((n, n_li))
     delta_G = np.zeros((n, n_li))
     while m_new < m_old:
         m_old = m_new
-        g_new = g2
+        g_new = g2.copy()
         count += 1
 
         # determine search direction
@@ -311,8 +311,8 @@ def l_bfgs(fun, grad, u, n_li=3, alpha_init=1, c1=1e-4, c2=0.9, r=0.5, tol=1e-15
             h = -np.dot(L0, g_new)
         else:
             gamma = np.zeros((n_li, 1))
-            h = g_new
-            for j in range(n_li, max(1, n_li-count + 2), -1):
+            h = g_new.copy()
+            for j in range(n_li, max(1, n_li-count + 2)+1, -1):
                 rho_j = rho[I(j)]
                 delta_u = delta_U[:,I(j)]
                 delta_g = delta_G[:,I(j)]
@@ -322,7 +322,7 @@ def l_bfgs(fun, grad, u, n_li=3, alpha_init=1, c1=1e-4, c2=0.9, r=0.5, tol=1e-15
 
             h = np.dot(L0, h)
             
-            for j in range(max(1, n_li - count + 2), n_li):
+            for j in range(max(1, n_li - count + 2)+1, n_li):
                 rho_j = rho[I(j)]
                 delta_u = delta_U[:,I(j)]
                 delta_g = delta_G[:,I(j)]
@@ -339,20 +339,20 @@ def l_bfgs(fun, grad, u, n_li=3, alpha_init=1, c1=1e-4, c2=0.9, r=0.5, tol=1e-15
         delta_u = ux - u
         u = ux
         if signal1 == 1:
-            m_new = m3
-            g2 = g3
+            m_new = m3.copy()
+            g2 = g3.copy()
         else:
-            m_new = m2
+            m_new = m2.copy()
         
         delta_g = g2 - g_new
-        delta_U[:, I(1) : I(n_li - 1)] = delta_U[:, I(2) : I(n_li)]
-        delta_U[:,I(n_li)] = delta_u
+        delta_U[:, :- 1] = delta_U[:, 1:]
+        delta_U[:, -1] = delta_u
         
-        delta_G[:, I(1) : I(n_li - 1)] = delta_G[:, I(2) : I(n_li)]
-        delta_G[:,I(n_li)] = delta_g
+        delta_G[:, :-1] = delta_G[:, 1:]
+        delta_G[:, -1] = delta_g
         
-        rho[I(1) : I(n_li - 1)] = rho[I(2) : I(n_li)]
-        rho[I(n_li)] = 1.0 / np.inner(delta_g, delta_u)
+        rho[:-1] = rho[1:]
+        rho[-1] = 1.0 / np.inner(delta_g, delta_u)
         
         if count % 100 == 0:
             log.debug(f"Iteration {count} ; fun(u) : {m_old}; u: {u - delta_u}")
