@@ -96,6 +96,7 @@ model4a_inputs={
     0.4733]),
     "A": np.ones(148),
     "g": _g,
+    "g_zero": np.zeros(80),
     "expected_grad": np.array([
     0.8276,
     3.9456,

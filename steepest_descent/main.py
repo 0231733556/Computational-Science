@@ -4,6 +4,7 @@ import logging as log
 import sympy as sp
 from inputs import rosenbrock_inputs as rb, model4a_inputs as m4a
 from algorithms import *
+from constraints import *
 
 def __main__():
     set_logging_level(log.DEBUG)
@@ -70,7 +71,22 @@ def l_bfgs_tests():
     hess = lambda u: fn.model4a_hessian(u, m4a["A"], m4a["g"])
     u_zero = np.zeros(80)
     l_bfgs(f, grad, u_zero, n_li=10)
-
+    
+def constraint_tests():
+    set_logging_level(log.DEBUG)
+    f = lambda u: fn.model4a_objective(u, m4a["A"], m4a["g_zero"])
+    grad = lambda u: fn.model4a_gradient(u, m4a["A"], m4a["g_zero"])
+    
+    R=9
+    yR=12.5
+    xR=4.5
+    f_c, g_c = make_penalized_model4a(f,grad, xR, yR, R, k=100)
+    
+    u_zero = np.zeros(80)
+    bfgs(f_c, g_c, u_zero)
+    
+    
+    
 if __name__ == "__main__":
-    l_bfgs_tests()
+    constraint_tests()
     #__main__()
