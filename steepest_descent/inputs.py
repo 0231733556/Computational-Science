@@ -96,6 +96,7 @@ model4a_inputs={
     0.4733]),
     "A": np.ones(148),
     "g": _g,
+    "u_zero": np.zeros(80),
     "g_zero": np.zeros(80),
     "expected_grad": np.array([
     0.8276,
@@ -178,4 +179,21 @@ model4a_inputs={
     0.9078,
     -0.2301,
     0.4531])
+}
+
+constrains_8_16_inputs={
+    "R": 9,
+    "yR": 12.5,
+    "xR": 4.5
+}
+
+constrains_8_17_inputs={
+    "R": 9,
+    "yR": 12.5,
+    "xR": 4.5
+}
+constrains_8_18_inputs={
+    "R": 9,
+    "yR": 12.5,
+    "xR": 4.5
 }

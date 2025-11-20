@@ -408,6 +408,8 @@ def model4a_hessian(u, A, g, eps=1e-12) -> np.ndarray:
 
 def beta_1(f_new,f_old,h_old):
     """
+    Correlates to eq. 4.6
+    
     Compute the first beta coefficient,
     by dividing the squared norm of the new gradient,
     by the squared norm of the old gradient.
@@ -424,6 +426,8 @@ def beta_1(f_new,f_old,h_old):
 
 def beta_2(f_new,f_old,h_old):
     """
+    Correlates to eq. 4.7
+    
     Compute the second beta coefficient,
     by dividing the dot product of the new gradient
     and the difference between the new and old gradients,
@@ -441,6 +445,8 @@ def beta_2(f_new,f_old,h_old):
 
 def beta_3(f_new,f_old,h_old):
     """
+    Correlates to eq. 4.8
+    
     Compute the third beta coefficient,
     by dividing the dot product of the new gradient
     and the difference between the new and old gradients,
@@ -458,8 +464,10 @@ def beta_3(f_new,f_old,h_old):
     """
     return np.dot(f_new,f_new-f_old)/np.dot(h_old, (f_new-f_old))
 
-def beta_4(f_new,f_old,h_old):
+def beta_4(f_new,f_old,h_old):    
     """
+    Correlates to eq. 4.9
+    
     Compute the fourth beta coefficient,
     by dividing the squared norm of the new gradient vector,
     by the dot product of the old step direction

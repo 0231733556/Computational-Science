@@ -1,7 +1,7 @@
 import numpy as np
 import functions as fn
 import logging as log
-from inputs import rosenbrock_inputs as rb, model4a_inputs as m4a
+from inputs import rosenbrock_inputs as rb, model4a_inputs as m4a, constrains_8_16_inputs as c8_16, constrains_8_17_inputs as c8_17, constrains_8_18_inputs as c8_18
 from algorithms import *
 from constraints import *
 
@@ -42,13 +42,9 @@ def l_bfgs_tests():
     
 def constraint_tests():
     set_logging_level(log.DEBUG)
+
     f = lambda u: fn.model4a_objective(u, m4a["A"], m4a["g_zero"])
     grad = lambda u: fn.model4a_gradient(u, m4a["A"], m4a["g_zero"])
-    
-    R=9
-    yR=12.5
-    xR=4.5
-    f_c, g_c = make_penalized_model4a(f,grad, xR, yR, R, k=100)
-    
-    u_zero = np.zeros(80)
-    bfgs(f_c, g_c, u_zero)
+    f_c, g_c = make_penalized_model4a(f, grad, model4a_constraint_8_16, c8_16["xR"], c8_16["yR"], c8_16["R"], k=100)
+    #steepest_descent_conjugate(fun=f_c, u=m4a["u_zero"], grad=g_c, beta=fn.beta_1, n=25, r=0.5, c=0.5, alpha_init=1)
+    bfgs(f_c, g_c, m4a["u_zero"])
