@@ -14,8 +14,8 @@ def model4a_constraint_8_17(dx, dy, R):
     
 def model4a_constraint_8_18(dx, dy, R):
 
-    val = R - sqrt(dx*dx + dy*dy)
-    return val if val > 0.0 else 0.0
+    val = sqrt(dx*dx + dy*dy)-R
+    return val if val < 0.0 else 0.0
 
 def make_penalized_model4a(fun, grad, constraint, xR, yR, R, k, j_range=range(31, 41)):
     """
