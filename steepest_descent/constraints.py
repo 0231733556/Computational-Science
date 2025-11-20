@@ -234,10 +234,20 @@ def make_penalized_model4a(fun, grad, constraint, xR, yR, R, k, j_range=range(31
         """
         u = np.asarray(u, float)
         g = np.asarray(grad(u), float).copy()
-        for c, dx, dy, ix, iy in penalty_terms(constraint,u):
-            # gradient of k*c^2
-            g[ix] +=  k * c * dx
-            g[iy] +=  k * c * dy
+        for c, dx, dy, ix, iy in penalty_terms(constraint, u):
+            # If constraint value is zero (e.g. clamped constraints) no contribution
+            if c == 0.0:
+                continue
+            # r = sqrt(dx^2 + dy^2)
+            r = np.hypot(dx, dy)
+            # avoid division by zero; when r == 0, dx and dy are also zero so contribution is zero
+            if r == 0.0:
+                continue
+            # Gradient of 0.5 * k * c^2 is k * c * (dc/du).
+            # c = sqrt(dx^2 + dy^2) - R, dc/d(u_ix) = -dx / r, dc/d(u_iy) = -dy / r
+            factor = k * c / r
+            g[ix] += - factor * dx
+            g[iy] += - factor * dy
         return g
 
     return pen_fun, pen_grad
