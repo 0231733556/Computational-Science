@@ -3,6 +3,7 @@ from functions import I
 import numpy as np
 import logging as log
 
+
 def model4a_constraint_8_16(dx, dy, R):
     val = sqrt(dx*dx + dy*dy)- R
     return val
@@ -91,7 +92,7 @@ def make_penalized_model4a(fun, grad, constraint, xR, yR, R, k, j_range=range(31
     """
     j_range = list(j_range)
 
-    def penalty_terms(constraint,u):
+    def penalty_terms(u):
         """
         Compute penalty terms for a set of constraints based on the decision vector `u`.
 
@@ -184,7 +185,7 @@ def make_penalized_model4a(fun, grad, constraint, xR, yR, R, k, j_range=range(31
         u = np.asarray(u, float)
         base = float(fun(u))
         val = base
-        for c, _, _, _, _ in penalty_terms(constraint,u):
+        for c, _, _, _, _ in penalty_terms(u):
             val += 0.5 * k * c**2
         return val
 
@@ -234,7 +235,7 @@ def make_penalized_model4a(fun, grad, constraint, xR, yR, R, k, j_range=range(31
         """
         u = np.asarray(u, float)
         g = np.asarray(grad(u), float).copy()
-        for c, dx, dy, ix, iy in penalty_terms(constraint, u):
+        for c, dx, dy, ix, iy in penalty_terms(u):
             # If constraint value is zero (e.g. clamped constraints) no contribution
             if c == 0.0:
                 continue
@@ -251,3 +252,178 @@ def make_penalized_model4a(fun, grad, constraint, xR, yR, R, k, j_range=range(31
         return g
 
     return pen_fun, pen_grad
+
+
+def make_lagrangian_model4a(fun, grad, hess, constraint, xR, yR, R, j_range=range(31, 41)):
+    """
+    Create Lagrangian helpers for model4a circular proximity constraints.
+
+    Returns a tuple of four callables:
+      - L_fun(u, lam): scalar Lagrangian value = fun(u) + sum_j lam_j * c_j(u)
+      - L_grad_u(u, lam): gradient of L w.r.t. u (1-D array)
+      - L_grad_lambda(u, lam): vector of constraint values c_j(u)
+      - update_lambda(lam, u, rho=1.0, project_nonneg=True): simple dual ascent update
+
+    Notes
+    -----
+    - c_j(u) is the raw constraint defined as sqrt(dx**2 + dy**2) - R where
+      dx = Ax_j - u[ix], dy = By_j - u[iy] and Ax_j = xR - j + 31, By_j = yR - 4.
+    - The returned functions require `I` and `np` to be available in module scope.
+    - `lam` should be an array-like of length equal to number of j in `j_range`.
+    """
+    j_range = list(j_range)
+
+    def _constraint_raw(u):
+        u = np.asarray(u, float)
+        c_list = []
+        coords = []
+        for j in j_range:
+            ix = I(2*j-1)
+            iy = I(2*j)
+            Ax = xR - j + 31
+            By = yR - 4
+            dx = Ax - u[ix]
+            dy = By - u[iy]
+            c = constraint(dx, dy, R)
+            c_list.append(c)
+            coords.append((dx, dy, ix, iy))
+        return np.asarray(c_list, float), coords
+
+    def L_fun(u, lam):
+        """Lagrangian value L(u, lam) = fun(u) + lam^T c(u)"""
+        u = np.asarray(u, float)
+        lam = np.asarray(lam, float)
+        base = float(fun(u))
+        c_vec, _ = _constraint_raw(u)
+        return base + float(np.dot(lam, c_vec))
+
+    def L_grad_u(u, lam):
+        """Gradient of L with respect to u: grad(fun) + sum_j lam_j * dc_j/du"""
+        u = np.asarray(u, float)
+        lam = np.asarray(lam, float)
+        g = np.asarray(grad(u), float).copy()
+        _, coords = _constraint_raw(u)
+        for idx, (dx, dy, ix, iy) in enumerate(coords):
+            lam_j = lam[idx]
+            # derivative of c = sqrt(dx^2+dy^2)-R wrt u[ix], u[iy]
+            r = np.hypot(dx, dy)
+            if r == 0.0:
+                # when r == 0 the directional derivative is zero (dx=dy=0)
+                continue
+            dc_du_ix = - dx / r
+            dc_du_iy = - dy / r
+            g[ix] += lam_j * dc_du_ix
+            g[iy] += lam_j * dc_du_iy
+        return g
+
+    def L_grad_lambda(u, lam=None):
+        """Return the vector of constraint values c_j(u).
+
+        This is the gradient of L w.r.t. the multipliers (dual variables).
+        """
+        u = np.asarray(u, float)
+        c_vec, _ = _constraint_raw(u)
+        return c_vec
+
+    def update_lambda(lam, u, rho=1.0, project_nonneg=True):
+        """Simple dual-ascent multiplier update: lam <- lam + rho * c(u).
+
+        If `project_nonneg` is True, the updated multipliers are projected to
+        the non-negative orthant (useful for inequality constraints of the
+        form c(u) <= 0).
+        """
+        lam = np.asarray(lam, float).copy()
+        c_vec = L_grad_lambda(u)
+        lam += rho * c_vec
+        if project_nonneg:
+            lam = np.maximum(lam, 0.0)
+        return lam
+
+    def L_hess(u, lam):
+        """Hessian of L w.r.t. u: H_fun(u) + sum_j lam_j * Hessian(c_j)(u)
+
+        `hess` is the base Hessian callable passed to the factory and must
+        return a full (n,n) array compatible with `u`.
+        """
+        u = np.asarray(u, float)
+        lam = np.asarray(lam, float)
+        H = np.asarray(hess(u), float).copy()
+        _, coords = _constraint_raw(u)
+        for idx, (dx, dy, ix, iy) in enumerate(coords):
+            lam_j = lam[idx]
+            if lam_j == 0.0:
+                continue
+            r = np.hypot(dx, dy)
+            if r == 0.0:
+                continue
+            s = np.array([dx, dy], float)
+            # local 2x2 Hessian for c = sqrt(dx^2+dy^2) - R
+            H_local = (np.eye(2) / r) - np.outer(s, s) / (r**3)
+            # add lam_j * H_local into global Hessian at (ix,iy)
+            H[np.ix_([ix, iy], [ix, iy])] += lam_j * H_local
+        return H
+
+    return L_fun, L_grad_u, L_grad_lambda, update_lambda, L_hess
+
+
+def lagrangian_solver(fun, grad, hess, constraint,algorithm, xR, yR, R,
+                      u0, lam0=None, tol=1e-12, rho=1.0, max_iter=20,
+                      j_range=range(31, 41)):
+    """
+    Solve the equality-constrained problem using an alternating primal-dual
+    Lagrangian scheme that performs Newton primal steps.
+
+    Parameters
+    - fun, grad, hess : callables
+        Base objective and its derivatives (hess returns full (n,n) array).
+    - constraint : callable
+        Constraint function with signature constraint(dx, dy, R) as used in
+        `make_lagrangian_model4a`.
+    - xR, yR, R : floats
+        Constraint parameters used to assemble the constraint terms.
+    - u0 : array_like
+        Initial primal iterate.
+    - lam0 : array_like or None
+        Initial multipliers; if None zeros are used.
+    - tol : float
+        Tolerance on constraint norm for termination.
+    - rho : float
+        Dual step-length multiplier.
+    - max_iter : int
+        Maximum number of primal-dual iterations.
+    - j_range : iterable
+        Indices used to construct constraints.
+
+    Returns
+    - u, lam, c_vec, iters
+        Final primal vector, multipliers, last constraint vector, and iterations used.
+    """
+    L_fun, L_grad_u, L_grad_lambda, update_lambda, L_hess = make_lagrangian_model4a(
+        fun, grad, hess, constraint, xR, yR, R, j_range=j_range
+    )
+
+    u = np.asarray(u0, float).copy()
+    if lam0 is None:
+        lam = np.zeros(len(list(j_range)))
+    else:
+        lam = np.asarray(lam0, float).copy()
+
+    for it in range(1, max_iter+1):
+        # primal: Newton minimization of L(u, lam)
+        fL = lambda uu: L_fun(uu, lam)
+        gL = lambda uu: L_grad_u(uu, lam)
+        hL = lambda uu: L_hess(uu, lam)
+        res = algorithm(fL, gL, hL, u, tol)
+        u = res[0]
+
+        # dual update (equality constraints): lam <- lam + rho * c(u)
+        c_vec = L_grad_lambda(u)
+        lam = lam + rho * c_vec
+
+        if np.linalg.norm(c_vec) < tol:
+            return u, lam, c_vec, it
+        
+    log.info(f"Lagrangian solver finished, found u: {u} and lambda: {lam}")
+    return u, lam, c_vec, max_iter
+
+

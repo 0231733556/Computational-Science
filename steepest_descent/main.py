@@ -8,8 +8,7 @@ from constraints import *
 from tests import *
 
 def __main__():
-    set_logging_level(log.DEBUG)
- 
+
     # testing objective and gradients
     fn.rosenbrock(rb["x"], rb["a"], rb["b"])
     fn.rosenbrock_grad(rb["x"], rb["a"], rb["b"])
@@ -40,5 +39,5 @@ def __main__():
     bfgs(f, grad, m4a["u"])
 
 if __name__ == "__main__":
-    constraint_tests()
+    lagrangian_test()
     #__main__()

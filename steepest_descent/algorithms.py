@@ -9,7 +9,6 @@ EPSILON = 1e-6
 
 def set_logging_level(level):
     log.basicConfig(level=level)
-    fn.set_logging_level(level)
 
 def steepest_descent(fun, grad, u, alpha=0.04):
     """
@@ -133,7 +132,7 @@ def newtons_method(fun,grad,hess,u,tol):
         count += 1
         if count % 10 == 0:
             log.debug(f"Iteration {count} ; fun(u) : {fun(u)}; u: {u}")
-    log.debug(f" {count} iterations; fun(u) : {fun(u)}; u: {u}")
+    log.info(f" {count} iterations; fun(u) : {fun(u)}; u: {u}")
     return u, fun(u)
 
 
