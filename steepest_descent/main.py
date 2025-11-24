@@ -39,5 +39,6 @@ def __main__():
     bfgs(f, grad, m4a["u"])
 
 if __name__ == "__main__":
-    lagrangian_test()
+    set_logging_level(log.INFO)
+    constraint_tests()
     #__main__()

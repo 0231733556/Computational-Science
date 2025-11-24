@@ -7,6 +7,18 @@ from constraints import *
 
 def set_logging_level(level):
     log.basicConfig(level=level)
+    
+def newtons_method_tests():
+    f = lambda x: fn.rosenbrock(x, rb["a"], rb["b"])
+    grad = lambda x: fn.rosenbrock_grad(x, rb["a"], rb["b"])
+    hess = lambda x: fn.rosenbrock_hess(x, rb["a"], rb["b"])
+    newtons_method(f, grad, hess, rb["x"], tol=1e-12)
+    
+    f = lambda u: fn.model4a_objective(u, m4a["A"], m4a["g"])
+    grad = lambda u: fn.model4a_gradient(u, m4a["A"], m4a["g"])
+    hess = lambda u: fn.model4a_hessian(u, m4a["A"], m4a["g"])
+    u_zero = np.zeros(80)
+    newtons_method(f, grad, hess, u_zero, tol=1e-12)
 
 def bfgs_tests():
 
@@ -43,9 +55,11 @@ def constraint_tests():
 
     f = lambda u: fn.model4a_objective(u, m4a["A"], m4a["g_zero"])
     grad = lambda u: fn.model4a_gradient(u, m4a["A"], m4a["g_zero"])
-    f_c, g_c = make_penalized_model4a(f, grad, model4a_constraint_8_18, c8_18["xR"], c8_18["yR"], c8_18["R"], k=100)
-    steepest_descent_conjugate(fun=f_c, u=m4a["u_zero"], grad=g_c, beta=fn.beta_1, n=25, r=0.5, c=0.5, alpha_init=1)
+    hess = lambda u: fn.model4a_hessian(u, m4a["A"], m4a["g_zero"])
+    f_c, g_c, h_c = make_penalized_model4a(f, grad, hess, model4a_constraint_8_18, c8_18["xR"], c8_18["yR"], c8_18["R"], k=100)
+    #steepest_descent_conjugate(fun=f_c, u=m4a["u_zero"], grad=g_c, beta=fn.beta_1, n=25, r=0.5, c=0.5, alpha_init=1)
     #bfgs(f_c, g_c, m4a["u_zero"])
+    newtons_method(f_c, g_c, h_c, m4a["u_zero"], tol=1e-12)
     # run lagrangian test as part of constraint tests
 
 

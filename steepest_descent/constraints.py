@@ -18,7 +18,7 @@ def model4a_constraint_8_18(dx, dy, R):
     val = sqrt(dx*dx + dy*dy)-R
     return val if val < 0.0 else 0.0
 
-def make_penalized_model4a(fun, grad, constraint, xR, yR, R, k, j_range=range(31, 41)):
+def make_penalized_model4a(fun, grad,hess, constraint, xR, yR, R, k, j_range=range(31, 41)):
     """
     Create a penalized objective and its gradient for enforcing circular proximity constraints.
 
@@ -233,6 +233,8 @@ def make_penalized_model4a(fun, grad, constraint, xR, yR, R, k, j_range=range(31
         >>> u = [0.1, 0.2, 0.3]
         >>> g = pen_grad(u)  # returns numpy array of same length as grad(u)
         """
+        if hess is None:
+            return None
         u = np.asarray(u, float)
         g = np.asarray(grad(u), float).copy()
         for c, dx, dy, ix, iy in penalty_terms(u):
@@ -250,8 +252,48 @@ def make_penalized_model4a(fun, grad, constraint, xR, yR, R, k, j_range=range(31
             g[ix] += - factor * dx
             g[iy] += - factor * dy
         return g
+    
+    def pen_hess(u):
+        """
+        Compute the Hessian of the penalized objective at point `u`.
 
-    return pen_fun, pen_grad
+        This function computes the Hessian matrix of the penalized objective
+        by adding penalty contributions to the base Hessian obtained from
+        `hess(u)`. Each penalty term contributes to the Hessian based on
+        second derivatives of the constraint functions.
+
+        Parameters
+        ----------
+        u : array_like
+            Input point at which the Hessian is evaluated. Converted to a NumPy array.
+
+        Returns
+        -------
+        numpy.ndarray
+            2-D array representing the Hessian matrix of the penalized objective.
+
+        Notes
+        -----
+        - The function assumes that `hess(u)` returns a full (n,n) array.
+        - Penalty contributions are computed based on second derivatives of
+          the constraints and added to the appropriate entries in the Hessian.
+        - The returned Hessian is a new NumPy array, leaving the original `u` untouched.
+        """
+        u = np.asarray(u, float)
+        H = np.asarray(hess(u), float).copy()
+        for c, dx, dy, ix, iy in penalty_terms(u):
+            r = np.hypot(dx, dy)
+            if r == 0.0:
+                continue
+            # Compute second derivative contributions and add to H[ix,ix], H[iy,iy], H[ix,iy], H[iy,ix]
+            factor = k * c / (r**3)
+            H[ix, ix] += factor * (dy*dy + r*r)
+            H[iy, iy] += factor * (dx*dx + r*r)
+            H[ix, iy] += -factor * dx * dy
+            H[iy, ix] += -factor * dx * dy
+        return H
+
+    return pen_fun, pen_grad, pen_hess
 
 
 def make_lagrangian_model4a(fun, grad, hess, constraint, xR, yR, R, j_range=range(31, 41)):
