@@ -70,8 +70,8 @@ def inequality_constraint_tests():
     f = lambda u: fn.model4a_objective(u, m4a["A"], m4a["g_zero"])
     grad = lambda u: fn.model4a_gradient(u, m4a["A"], m4a["g_zero"])
     hess = lambda u: fn.model4a_hessian(u, m4a["A"], m4a["g_zero"])
-    f_c, g_c, h_c = make_penalized_model4a(f, grad, hess, model4a_constraint_8_17, c8_16["xR"], c8_16["yR"], c8_16["R"], k=100)
-    f_c2, g_c2, h_c2 = make_penalized_model4a(f, grad, hess, model4a_constraint_8_18, c8_16["xR"], c8_16["yR"], c8_16["R"], k=100)
+    f_c, g_c, h_c = make_penalized_model4a(f, grad, hess, model4a_constraint_8_17, c8_17["xR"], c8_17["yR"], c8_17["R"], k=100)
+    f_c2, g_c2, h_c2 = make_penalized_model4a(f, grad, hess, model4a_constraint_8_18, c8_18["xR"], c8_18["yR"], c8_18["R"], k=100)
     
     print("=================== Conjugate ===================")
     steepest_descent_conjugate(fun=f_c, u=m4a["u_zero"], grad=g_c, beta=fn.beta_1, n=25, r=0.5, c=0.5, alpha_init=1)
@@ -120,9 +120,26 @@ def lagrangian_test():
     u = m4a["u_zero"].copy()
     lam = np.zeros(len(range(31, 41)))
 
+    print("=================== Lagrangian 8.16 ===================")
     # Use the reusable solver in constraints.py which performs Newton primal steps
     u, lam, c_vec, iters = lagrangian_solver(
         f, grad, base_hess, model4a_constraint_8_16,newtons_method,
+        xR, yR, R, u0=u, lam0=lam, tol=1e-12, rho=1.0, max_iter=20,
+        j_range=range(31, 41)
+    )
+    
+    print("=================== Lagrangian 8.17 ===================")
+    # Use the reusable solver in constraints.py which performs Newton primal steps
+    u, lam, c_vec, iters = lagrangian_solver(
+        f, grad, base_hess, model4a_constraint_8_17,newtons_method,
+        xR, yR, R, u0=u, lam0=lam, tol=1e-12, rho=1.0, max_iter=20,
+        j_range=range(31, 41)
+    )
+    
+    print("=================== Lagrangian 8.18 ===================")
+    # Use the reusable solver in constraints.py which performs Newton primal steps
+    u, lam, c_vec, iters = lagrangian_solver(
+        f, grad, base_hess, model4a_constraint_8_18, newtons_method,
         xR, yR, R, u0=u, lam0=lam, tol=1e-12, rho=1.0, max_iter=20,
         j_range=range(31, 41)
     )

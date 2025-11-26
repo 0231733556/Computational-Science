@@ -11,12 +11,12 @@ def model4a_constraint_8_16(dx, dy, R):
 def model4a_constraint_8_17(dx, dy, R):
  
     val = sqrt(dx*dx + dy*dy) - R
-    return val if val > 0.0 else 0.0
+    return val if val >= 0.0 else 0.0
     
 def model4a_constraint_8_18(dx, dy, R):
 
     val = sqrt(dx*dx + dy*dy)-R
-    return val if val < 0.0 else 0.0
+    return val if val <= 0.0 else 0.0
 
 def make_penalized_model4a(fun, grad, hess, constraint, xR, yR, R, k, j_range=range(31, 41)):
     """
@@ -282,6 +282,9 @@ def make_penalized_model4a(fun, grad, hess, constraint, xR, yR, R, k, j_range=ra
         u = np.asarray(u, float)
         H = np.asarray(hess(u), float).copy()
         for c, dx, dy, ix, iy in penalty_terms(u):
+            # inequality constraints: inactive → no Hessian contribution
+            if c == 0.0:
+                continue
             r = np.hypot(dx, dy)
             if r == 0.0:
                 continue
@@ -470,7 +473,7 @@ def lagrangian_solver(fun, grad, hess, constraint,algorithm, xR, yR, R,
         if np.linalg.norm(c_vec) < tol:
             return u, lam, c_vec, it
         
-    log.info(f"Lagrangian solver finished, found u: {u} and lambda: {lam}")
+    log.info(f"Lagrangian solver finished, found \n u: {np.round(u, 4)} and \n lambda: {np.round(lam, 4)}")
     return u, lam, c_vec, max_iter
 
 

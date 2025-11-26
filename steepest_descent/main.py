@@ -40,5 +40,7 @@ def __main__():
 
 if __name__ == "__main__":
     set_logging_level(log.DEBUG)
-    inequality_constraint_tests()
+    #constraint_tests()
+    #inequality_constraint_tests() # BFGS fails with 8.18
+    lagrangian_test() # Lagrangian fails with 8.17 and 8.18
     #__main__()
