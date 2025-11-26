@@ -57,9 +57,12 @@ def constraint_tests():
     grad = lambda u: fn.model4a_gradient(u, m4a["A"], m4a["g_zero"])
     hess = lambda u: fn.model4a_hessian(u, m4a["A"], m4a["g_zero"])
     f_c, g_c, h_c = make_penalized_model4a(f, grad, hess, model4a_constraint_8_16, c8_16["xR"], c8_16["yR"], c8_16["R"], k=100)
-    #steepest_descent_conjugate(fun=f_c, u=m4a["u_zero"], grad=g_c, beta=fn.beta_1, n=25, r=0.5, c=0.5, alpha_init=1)
-    #bfgs(f_c, g_c, m4a["u_zero"])
+    print("=================== Conjugate ===================")
+    steepest_descent_conjugate(fun=f_c, u=m4a["u_zero"], grad=g_c, beta=fn.beta_1, n=25, r=0.5, c=0.5, alpha_init=1)
+    print("=================== Newton's ====================")
     newtons_method(f_c, g_c, h_c, m4a["u_zero"], tol=1e-12)
+    print("==================== BFGS =======================")
+    bfgs(f_c, g_c, m4a["u_zero"])
     # run lagrangian test as part of constraint tests
 
 

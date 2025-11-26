@@ -4,11 +4,17 @@ import functions as fn
 from functions import I
 import logging as log
 
-
 EPSILON = 1e-6
 
 def set_logging_level(level):
     log.basicConfig(level=level)
+    
+def print_results(fun_u, u, count, debug: bool = False):
+    printout = f"Iteration {count} ; fun(u) : {np.round(fun_u, 4)}; \n u: {np.round(u, 4)}"
+    if debug:
+        log.debug(printout)
+    else:
+        log.info(printout)
 
 def steepest_descent(fun, grad, u, alpha=0.04):
     """
@@ -64,7 +70,8 @@ def steepest_descent_backtracking(fun, grad, u, alpha=0.04, c=0.5, r=0.8):
         m_new = m_x
         u = u_x
         count += 1
-    log.debug(f"{count} iterations; fun(u): {m_old}; u: {u-alpha*h}")
+        
+    print_results(m_old, u-alpha*h, count) 
     return m_old, u-alpha*h
            
 
@@ -102,7 +109,7 @@ def steepest_descent_conjugate(fun, grad, u, alpha_init=0.04, c=0.5, r=0.8, n=10
         count += 1
     #log.debug(f"m_old: {m_old}, m_new: {m_new}, ||g_new||: {np.linalg.norm(g_new)}, ||h_new||: {np.linalg.norm(h_new)}, alpha: {alpha}, count: {count}")
     log.info(f"Conjugate Gradient converged in {count} iterations.")
-    log.debug(f"{count} iterations; fun(u): {m_old}; u: {u - alpha * h_new}")
+    print_results(m_old, u - alpha * h_new, count, debug=True)
     return m_old, u - alpha * h_new, count
 
 def newtons_method(fun,grad,hess,u,tol):
@@ -131,8 +138,8 @@ def newtons_method(fun,grad,hess,u,tol):
         g = grad(u)
         count += 1
         if count % 10 == 0:
-            log.debug(f"Iteration {count} ; fun(u) : {fun(u)}; u: {u}")
-    log.info(f" {count} iterations; fun(u) : {fun(u)}; u: {u}")
+            print_results(fun(u), u, count, debug=True)
+    print_results(fun(u), u, count, debug=False)
     return u, fun(u)
 
 
@@ -272,9 +279,8 @@ def bfgs(fun, grad, u, alpha_init=1, c1=1e-4, c2=0.9, r=0.5, tol=1e-15):
             m_new = m2
         
         if count % 100 == 0:
-            log.debug(f"Iteration {count} ; fun(u) : {m_old}; u: {u - diff_u}")
-    
-    log.debug(f" {count} iterations; fun(u) : {m_old}; u: {u - diff_u}")
+            print_results(m_old, u - diff_u, count, debug=True)
+    print_results(m_old, u - diff_u, count, debug=False)
     return m_old, u - diff_u
 
 
@@ -368,11 +374,9 @@ def l_bfgs(fun, grad, u, n_li=3, alpha_init=1, c1=1e-4, c2=0.9, r=0.5, tol=1e-15
         rho[-1] = 1.0 / np.inner(delta_g, delta_u)
         
         if count % 100 == 0:
-            log.debug(f"Iteration {count} ; fun(u) : {m_old}; u: {u - delta_u}")
+            print_results(m_old, u - delta_u, count, debug=True)
 
-        #print("h", h)
-        
-    log.debug(f" {count} iterations; fun(u) : {m_old}; u: {u - delta_u}")
+    print_results(m_old, u - delta_u, count, debug=False)    
     return m_old, u - delta_u
 
 
