@@ -18,7 +18,7 @@ def model4a_constraint_8_18(dx, dy, R):
     val = sqrt(dx*dx + dy*dy)-R
     return val if val < 0.0 else 0.0
 
-def make_penalized_model4a(fun, grad,hess, constraint, xR, yR, R, k, j_range=range(31, 41)):
+def make_penalized_model4a(fun, grad, hess, constraint, xR, yR, R, k, j_range=range(31, 41)):
     """
     Create a penalized objective and its gradient for enforcing circular proximity constraints.
 
@@ -233,8 +233,6 @@ def make_penalized_model4a(fun, grad,hess, constraint, xR, yR, R, k, j_range=ran
         >>> u = [0.1, 0.2, 0.3]
         >>> g = pen_grad(u)  # returns numpy array of same length as grad(u)
         """
-        if hess is None:
-            return None
         u = np.asarray(u, float)
         g = np.asarray(grad(u), float).copy()
         for c, dx, dy, ix, iy in penalty_terms(u):
@@ -279,6 +277,8 @@ def make_penalized_model4a(fun, grad,hess, constraint, xR, yR, R, k, j_range=ran
           the constraints and added to the appropriate entries in the Hessian.
         - The returned Hessian is a new NumPy array, leaving the original `u` untouched.
         """
+        if hess is None:
+            return None
         u = np.asarray(u, float)
         H = np.asarray(hess(u), float).copy()
         for c, dx, dy, ix, iy in penalty_terms(u):
@@ -286,11 +286,16 @@ def make_penalized_model4a(fun, grad,hess, constraint, xR, yR, R, k, j_range=ran
             if r == 0.0:
                 continue
             # Compute second derivative contributions and add to H[ix,ix], H[iy,iy], H[ix,iy], H[iy,ix]
-            factor = k * c / (r**3)
-            H[ix, ix] += factor * (dy*dy + r*r)
-            H[iy, iy] += factor * (dx*dx + r*r)
-            H[ix, iy] += -factor * dx * dy
-            H[iy, ix] += -factor * dx * dy
+            # v = [dx,dy], r = ||v||, c = r - R
+            cr = c / r           # c/r
+            R_over_r3 = R / (r**3)
+
+            # Contributions only to the 2x2 block (ix,iy)
+            H[ix, ix] += k * (cr + R_over_r3 * dx*dx)
+            H[iy, iy] += k * (cr + R_over_r3 * dy*dy)
+            off = k * (R_over_r3 * dx*dy)
+            H[ix, iy] += off
+            H[iy, ix] += off
         return H
 
     return pen_fun, pen_grad, pen_hess

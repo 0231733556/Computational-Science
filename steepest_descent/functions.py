@@ -88,6 +88,13 @@ def _term_values(u: np.ndarray,
                 b_const += coeff
 
         # Computing a[u], b[u] and r
+        dot_a = np.dot(a_vec, u)
+        dot_b = np.dot(b_vec, u)
+        #if not np.any(dot_a):
+            #print("a 0", dot_a)
+        #if not np.any(dot_b):
+            #print("b 0", dot_b)
+
         a = np.dot(a_vec, u) + a_const
         b = np.dot(b_vec, u) + b_const
         r = np.hypot(a, b)
