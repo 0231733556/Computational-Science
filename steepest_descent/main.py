@@ -40,5 +40,5 @@ def __main__():
 
 if __name__ == "__main__":
     set_logging_level(log.DEBUG)
-    constraint_tests()
+    inequality_constraint_tests()
     #__main__()
