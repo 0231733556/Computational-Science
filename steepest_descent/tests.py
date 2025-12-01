@@ -86,7 +86,7 @@ def inequality_constraint_tests():
     print("=================== Newton's ====================")
     newtons_method(f_c2, g_c2, h_c2, m4a["u_zero"], tol=1e-12)
     print("==================== BFGS =======================")
-    bfgs(f_c2, g_c2, m4a["u_zero"])
+    bfgs(f_c2, g_c2, m4a["u_zero"], alpha_init=0.01)
     # run lagrangian test as part of constraint tests
 
 
@@ -118,7 +118,8 @@ def lagrangian_test():
 
     # initial guesses
     u = m4a["u_zero"].copy()
-    lam = np.zeros(len(range(31, 41)))
+    size = len(range(31, 41))
+    lam = np.zeros(size)
 
     print("=================== Lagrangian 8.16 ===================")
     # Use the reusable solver in constraints.py which performs Newton primal steps

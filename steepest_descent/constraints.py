@@ -5,17 +5,17 @@ import logging as log
 
 
 def model4a_constraint_8_16(dx, dy, R):
-    val = sqrt(dx*dx + dy*dy)- R
+    val = np.hypot(dx, dy) - R
     return val
 
 def model4a_constraint_8_17(dx, dy, R):
  
-    val = sqrt(dx*dx + dy*dy) - R
+    val = np.hypot(dx, dy) - R
     return val if val >= 0.0 else 0.0
     
 def model4a_constraint_8_18(dx, dy, R):
 
-    val = sqrt(dx*dx + dy*dy)-R
+    val = np.hypot(dx, dy) - R
     return val if val <= 0.0 else 0.0
 
 def make_penalized_model4a(fun, grad, hess, constraint, xR, yR, R, k, j_range=range(31, 41)):
@@ -471,6 +471,7 @@ def lagrangian_solver(fun, grad, hess, constraint,algorithm, xR, yR, R,
         lam = lam + rho * c_vec
 
         if np.linalg.norm(c_vec) < tol:
+            log.info(f"Lagrangian solver finished before max iterations at {it} iterations, found \n u: {np.round(u, 4)} and \n lambda: {np.round(lam, 4)}")
             return u, lam, c_vec, it
         
     log.info(f"Lagrangian solver finished, found \n u: {np.round(u, 4)} and \n lambda: {np.round(lam, 4)}")
