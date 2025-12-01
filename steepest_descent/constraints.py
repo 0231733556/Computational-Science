@@ -18,7 +18,7 @@ def model4a_constraint_8_18(dx, dy, R):
     val = np.hypot(dx, dy) - R
     return val if val <= 0.0 else 0.0
 
-def make_penalized_model4a(fun, grad, hess, constraint, xR, yR, R, k, j_range=range(31, 41)):
+def make_penalized_function(fun, grad, hess, constraint, xR, yR, R, k, j_range=range(31, 41)):
     """
     Create a penalized objective and its gradient for enforcing circular proximity constraints.
 
